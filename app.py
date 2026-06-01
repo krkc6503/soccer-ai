@@ -80,24 +80,6 @@ position_map = {
 
 df["PositionNum"] = df["position"].map(position_map).fillna(3)
 
-# 淡路卓
-new_player = pd.DataFrame(
-    [
-        {
-            "name": "Awaji Suguru",
-            "current_club_name": "Real Madrid",
-            "position": "Attack",
-            "date_of_birth": pd.Timestamp("2008-01-01"),
-            "market_value_in_eur": 999999999,
-            "highest_market_value_in_eur": 999999999,
-            "NameJP": "淡路卓",
-            "ClubJP": "レアル・マドリード",
-            "Age": 18,
-            "PositionNum": 4,
-        }
-    ]
-)
-
 # AI学習
 X = df[["Age", "PositionNum"]]
 y = df["market_value_in_eur"]
@@ -110,12 +92,7 @@ mode = st.radio("選択", ["実在選手", "自分で入力"])
 
 if mode == "実在選手":
 
-    show_awaji = st.toggle("フェンシング選手をオンにする")
-
-    if show_awaji:
-        work_df = pd.concat([df, new_player], ignore_index=True)
-    else:
-        work_df = df.copy()
+    work_df = df.copy()
 
     search_name = st.text_input("選手名を入力（日本語・英語OK）")
 
