@@ -8,6 +8,11 @@ st.set_page_config(page_title="Soccer AI", layout="wide")
 
 st.title("⚽ サッカー選手 移籍金予測AI")
 
+st.info(
+    "※ 日本語検索は一部の有名選手のみ対応しています。"
+    "検索できない場合は英語表記で入力してください。"
+)
+
 # CSV読み込み
 df = pd.read_csv("players_small.csv")
 
