@@ -9,7 +9,7 @@ st.set_page_config(page_title="Soccer AI", layout="wide")
 st.title("⚽ サッカー選手 実市場価値予測AI")
 
 # CSV読み込み
-df = pd.read_csv("players.csv")
+df = pd.read_csv("players_small.csv")
 
 # 必要列
 df = df[
