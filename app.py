@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 st.set_page_config(page_title="Soccer AI", layout="wide")
 
-st.title("⚽ サッカー選手 実市場価値予測AI")
+st.title("⚽ サッカー選手 移籍金予測AI")
 
 # CSV読み込み
 df = pd.read_csv("players_small.csv")
