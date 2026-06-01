@@ -13,6 +13,14 @@ st.info(
     "検索できない場合は英語表記で入力してください。"
 )
 
+st.info(
+    "※ 日本語検索は一部の有名選手のみ対応しています。検索できない場合は英語表記で入力してください。"
+)
+
+st.markdown(
+    "🔍 [選手名がわからない場合はこちら](https://www.google.com/search?q=サッカー選手一覧)"
+)
+
 # CSV読み込み
 df = pd.read_csv("players_small.csv")
 
