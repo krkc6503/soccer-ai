@@ -136,3 +136,157 @@ df["NameJP"] = df["NameJP"].fillna(df["name"])
 
 df["ClubJP"] = df["current_club_name"].replace(club_jp)
 df["ClubJP"] = df["ClubJP"].fillna(df["current_club_name"])
+
+# -------------------------------
+# ポジション数値化
+# -------------------------------
+
+position_map = {
+    "Goalkeeper": 1,
+    "Defender": 2,
+    "Midfield": 3,
+    "Attack": 4,
+}
+
+df["PositionNum"] = (
+    df["position"]
+    .map(position_map)
+    .fillna(3)
+)
+
+# -------------------------------
+# AI学習
+# -------------------------------
+
+X = df[["Age", "PositionNum"]]
+y = df["market_value_in_eur"]
+
+model = LinearRegression()
+model.fit(X, y)
+
+# -------------------------------
+# モード選択
+# -------------------------------
+
+mode = st.radio(
+    "選択",
+    ["実在選手", "自分で入力"]
+)
+
+# ===============================
+# 実在選手モード
+# ===============================
+
+if mode == "実在選手":
+
+    search = st.text_input(
+        "選手名（日本語・英語OK）"
+    )
+
+    filtered = df[
+        df["NameJP"].str.contains(
+            search,
+            case=False,
+            na=False,
+        )
+        |
+        df["name"].str.contains(
+            search,
+            case=False,
+            na=False,
+        )
+    ]
+
+    if len(filtered) == 0:
+
+        st.warning("選手が見つかりません。")
+
+    else:
+
+        display = (
+            filtered["NameJP"]
+            + "（"
+            + filtered["ClubJP"]
+            + "）"
+        )
+
+        player = st.selectbox(
+            "選手を選択",
+            display
+        )
+
+        selected = filtered.iloc[
+            display.tolist().index(player)
+        ]
+
+        # -----------------------
+        # 顔写真
+        # -----------------------
+
+        if pd.notna(selected["player_face_url"]):
+
+            st.image(
+                selected["player_face_url"],
+                width=180,
+            )
+
+        # -----------------------
+        # 基本情報
+        # -----------------------
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.metric(
+                "Overall",
+                int(selected["overall"])
+                if pd.notna(selected["overall"])
+                else "-"
+            )
+
+            st.metric(
+                "Potential",
+                int(selected["potential"])
+                if pd.notna(selected["potential"])
+                else "-"
+            )
+
+            st.metric(
+                "Age",
+                int(selected["Age"])
+            )
+
+        with col2:
+
+            st.metric(
+                "Current Value (€)",
+                f"{selected['market_value_in_eur']:,.0f}"
+            )
+
+            st.metric(
+                "Highest Value (€)",
+                f"{selected['highest_market_value_in_eur']:,.0f}"
+            )
+
+            st.metric(
+                "Club",
+                selected["ClubJP"]
+            )
+
+        # -----------------------
+        # AI予測
+        # -----------------------
+
+        pred = model.predict(
+            [[
+                selected["Age"],
+                selected["PositionNum"]
+            ]]
+        )
+
+        st.subheader("🤖 AI予測市場価値")
+
+        st.success(
+            f"{pred[0]:,.0f} €"
+        )
