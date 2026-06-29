@@ -6,22 +6,24 @@ from sklearn.linear_model import LinearRegression
 
 st.set_page_config(page_title="Soccer AI", layout="wide")
 
-st.title("⚽ サッカー選手 移籍金予測AI")
+st.title("⚽ Soccer AI Ver2.0")
 
 st.info(
-    "※ 日本語検索は一部の有名選手のみ対応しています。"
-    "検索できない場合は英語表記で入力してください。"
+    "※ 日本語検索は一部の選手のみ対応しています。\n"
+    "検索できない場合は英語で検索してください。"
 )
 
 st.markdown(
-    "🔍 [選手名がわからない場合はこちら](https://www.google.com/search?q=サッカー選手一覧)"
+    "🔍 [選手名が分からない場合はこちら](https://www.google.com/search?q=サッカー選手一覧)"
 )
 
-# CSV読み込み
-df = pd.read_csv("players_small.csv")
+# -------------------------------
+# Transfermarktデータ
+# -------------------------------
 
-# 必要列
-df = df[
+tm = pd.read_csv("players_small.csv")
+
+tm = tm[
     [
         "name",
         "current_club_name",
@@ -32,36 +34,101 @@ df = df[
     ]
 ].dropna()
 
-# 日付変換
-df["date_of_birth"] = pd.to_datetime(df["date_of_birth"], errors="coerce")
-df = df.dropna(subset=["date_of_birth"])
+tm["date_of_birth"] = pd.to_datetime(
+    tm["date_of_birth"],
+    errors="coerce"
+)
 
-# 年齢
-df["Age"] = 2026 - df["date_of_birth"].dt.year
+tm = tm.dropna(subset=["date_of_birth"])
 
+tm["Age"] = 2026 - tm["date_of_birth"].dt.year
+
+# -------------------------------
+# FC26データ
+# -------------------------------
+
+fc = pd.read_csv("FC26_20250921.csv")
+
+fc = fc[
+    [
+        "short_name",
+        "long_name",
+        "overall",
+        "potential",
+        "value_eur",
+        "club_name",
+        "pace",
+        "shooting",
+        "passing",
+        "dribbling",
+        "defending",
+        "physic",
+        "player_face_url",
+    ]
+].copy()
+
+# -------------------------------
+# 名前を統一
+# -------------------------------
+
+tm["merge_name"] = (
+    tm["name"]
+    .str.lower()
+    .str.strip()
+)
+
+fc["merge_name"] = (
+    fc["short_name"]
+    .str.lower()
+    .str.strip()
+)
+
+# -------------------------------
+# データ結合
+# -------------------------------
+
+df = tm.merge(
+    fc,
+    on="merge_name",
+    how="left"
+)
+
+# -------------------------------
 # 日本語辞書
+# -------------------------------
+
 player_jp = {
-    "Kylian Mbappe": "エムバペ",
-    "Jude Bellingham": "ベリンガム",
-    "Erling Haaland": "ハーランド",
-    "Bukayo Saka": "サカ",
-    "Mohamed Salah": "サラー",
-    "Vinicius Junior": "ヴィニシウス",
-    "Kevin De Bruyne": "デブライネ",
-    "Harry Kane": "ケイン",
-    "Lionel Messi": "メッシ",
-    "Cristiano Ronaldo": "ロナウド",
-    "Neymar": "ネイマール",
-    "Son Heung-min": "ソン",
+
+    "Kylian Mbappe":"エムバペ",
+    "Erling Haaland":"ハーランド",
+    "Jude Bellingham":"ベリンガム",
+    "Vinicius Junior":"ヴィニシウス",
+    "Bukayo Saka":"サカ",
+    "Mohamed Salah":"サラー",
+    "Harry Kane":"ケイン",
+    "Kevin De Bruyne":"デブライネ",
+    "Lionel Messi":"メッシ",
+    "Cristiano Ronaldo":"ロナウド",
+    "Lamine Yamal":"ヤマル",
+    "Pedri":"ペドリ",
+    "Rodri":"ロドリ",
+    "Cole Palmer":"パーマー",
+    "Florian Wirtz":"ヴィルツ",
+    "Jamal Musiala":"ムシアラ",
+    "Neymar":"ネイマール",
+    "Son Heung-min":"ソン",
 }
 
 club_jp = {
-    "Real Madrid": "レアル・マドリード",
-    "FC Barcelona": "バルセロナ",
-    "Manchester City": "マンチェスター・シティ",
-    "Arsenal FC": "アーセナル",
-    "Liverpool FC": "リヴァプール",
-    "Paris Saint-Germain": "パリ・サンジェルマン",
+
+    "Real Madrid":"レアル・マドリード",
+    "FC Barcelona":"バルセロナ",
+    "Manchester City":"マンチェスター・シティ",
+    "Liverpool FC":"リヴァプール",
+    "Arsenal FC":"アーセナル",
+    "Chelsea FC":"チェルシー",
+    "Paris Saint-Germain":"パリ・サンジェルマン",
+    "Bayern Munich":"バイエルン",
 }
 
 df["NameJP"] = df["name"].replace(player_jp)
@@ -69,153 +136,3 @@ df["NameJP"] = df["NameJP"].fillna(df["name"])
 
 df["ClubJP"] = df["current_club_name"].replace(club_jp)
 df["ClubJP"] = df["ClubJP"].fillna(df["current_club_name"])
-
-# ポジション数値化
-position_map = {
-    "Goalkeeper": 1,
-    "Defender": 2,
-    "Midfield": 3,
-    "Attack": 4,
-}
-
-df["PositionNum"] = df["position"].map(position_map).fillna(3)
-
-# AI学習
-X = df[["Age", "PositionNum"]]
-y = df["market_value_in_eur"]
-
-model = LinearRegression()
-model.fit(X, y)
-
-# モード
-mode = st.radio("選択", ["実在選手", "自分で入力"])
-
-if mode == "実在選手":
-
-    work_df = df.copy()
-
-    search_name = st.text_input("選手名を入力（日本語・英語OK）")
-
-    filtered_players = work_df[
-        work_df["NameJP"].str.contains(search_name, case=False, na=False)
-        | work_df["name"].str.contains(search_name, case=False, na=False)
-    ]
-
-    if len(filtered_players) == 0:
-        st.warning("該当する選手がいません")
-
-    else:
-
-        display_names = (
-            filtered_players["NameJP"]
-            + "（"
-            + filtered_players["ClubJP"]
-            + "）"
-        )
-
-        player_display = st.selectbox("選手を選択", display_names)
-
-        selected = filtered_players.iloc[
-            display_names.tolist().index(player_display)
-        ]
-
-        st.subheader("選手データ")
-        st.dataframe(selected.to_frame().T)
-
-        pred = model.predict(
-            [[selected["Age"], selected["PositionNum"]]]
-        )
-
-        st.subheader("予測市場価値")
-        st.write(f"{pred[0]:,.0f} €")
-
-        # レーダーチャート
-        labels = [
-            "Age",
-            "Current Value",
-            "Highest Value",
-            "Position",
-        ]
-
-        values = [
-            selected["Age"] / work_df["Age"].max() * 100,
-            selected["market_value_in_eur"]
-            / work_df["market_value_in_eur"].max()
-            * 100,
-            selected["highest_market_value_in_eur"]
-            / work_df["highest_market_value_in_eur"].max()
-            * 100,
-            selected["PositionNum"] / 4 * 100,
-        ]
-
-        values += values[:1]
-
-        angles = np.linspace(
-            0,
-            2 * np.pi,
-            len(labels),
-            endpoint=False,
-        ).tolist()
-
-        angles += angles[:1]
-
-        fig, ax = plt.subplots(
-            figsize=(6, 6),
-            subplot_kw=dict(polar=True),
-        )
-
-        ax.plot(angles, values, linewidth=2)
-        ax.fill(angles, values, alpha=0.25)
-
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(labels, fontsize=11)
-
-        ax.set_ylim(0, 100)
-
-        st.subheader("Player Radar Chart")
-        st.pyplot(fig)
-
-        # トップ10
-        st.subheader("Top 10 Market Value")
-
-        top10 = work_df.sort_values(
-            "market_value_in_eur",
-            ascending=False,
-        ).head(10)
-
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-
-        ax2.barh(
-            top10["name"],
-            top10["market_value_in_eur"] / 1000000,
-        )
-
-        ax2.invert_yaxis()
-
-        ax2.set_xlabel("Market Value (Million €)")
-        ax2.set_ylabel("Player")
-
-        st.pyplot(fig2)
-
-else:
-
-    age = st.slider("年齢", 16, 40, 22)
-
-    position = st.selectbox(
-        "ポジション",
-        [
-            "Goalkeeper",
-            "Defender",
-            "Midfield",
-            "Attack",
-        ],
-    )
-
-    pos_num = position_map[position]
-
-    if st.button("予測"):
-
-        pred = model.predict([[age, pos_num]])
-
-        st.subheader("予測市場価値")
-        st.write(f"{pred[0]:,.0f} €")
