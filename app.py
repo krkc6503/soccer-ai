@@ -149,6 +149,8 @@ if player != "":
 # レーダーチャート
 # ==========================================
 
+if player != "" and 'row' in locals():
+
 st.divider()
 st.subheader("📊 能力レーダーチャート")
 
