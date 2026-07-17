@@ -212,7 +212,7 @@ if player != "" and 'row' in locals():
 
 if selected_player:
     st.divider()
-　　 st.subheader("📈 能力値グラフ")
+    st.subheader("📈 能力値グラフ")
 
     graph = pd.DataFrame({
     "能力": radar_stats,
