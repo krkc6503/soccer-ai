@@ -96,7 +96,7 @@ if player != "":
 
     st.write("ID:", row["ID"])
 
-    photo_url = f"https://cdn.sofifa.net/players/{row['ID']}/260006.png"
+    photo_url = f"https://drop-assets.ea.com/images/players/{player_id}.png"
 
     st.image(
     photo_url,
