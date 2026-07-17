@@ -187,7 +187,7 @@ if all(stat in ea.columns for stat in radar_stats):
 
     for stat in radar_stats:
         values.append(float(row[stat]))
-
+    st.write("row exists:", "row" in locals())
     values += values[:1]
 
     angles = np.linspace(
