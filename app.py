@@ -264,3 +264,94 @@ for c in show_cols:
     if c in ea.columns:
 
         st.write(f"**{c}** : {row[c]}")
+# ==========================================
+# 2選手比較
+# ==========================================
+
+st.divider()
+st.header("👥 2選手比較")
+
+players = sorted(ea[player_column].dropna().astype(str).unique())
+
+col1, col2 = st.columns(2)
+
+with col1:
+    player1 = st.selectbox(
+        "選手①",
+        players,
+        key="compare1"
+    )
+
+with col2:
+    player2 = st.selectbox(
+        "選手②",
+        players,
+        index=1 if len(players) > 1 else 0,
+        key="compare2"
+    )
+
+if player1 and player2:
+
+    p1 = ea[ea[player_column] == player1].iloc[0]
+    p2 = ea[ea[player_column] == player2].iloc[0]
+
+    compare_stats = ["PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
+
+    compare_df = pd.DataFrame({
+        player1: [p1[s] if s in ea.columns else 0 for s in compare_stats],
+        player2: [p2[s] if s in ea.columns else 0 for s in compare_stats]
+    }, index=compare_stats)
+
+    st.dataframe(compare_df)
+
+    st.bar_chart(compare_df.T)
+
+# ==========================================
+# 市場価値ランキング
+# ==========================================
+
+st.divider()
+st.header("💶 市場価値ランキング TOP20")
+
+if "market_value_in_eur" in tm.columns:
+
+    ranking = tm.sort_values(
+        "market_value_in_eur",
+        ascending=False
+    ).head(20)
+
+    show_columns = ["name"]
+
+    if "current_club_name" in ranking.columns:
+        show_columns.append("current_club_name")
+
+    if "market_value_in_eur" in ranking.columns:
+        show_columns.append("market_value_in_eur")
+
+    ranking = ranking[show_columns]
+
+    ranking = ranking.rename(columns={
+        "name": "選手名",
+        "current_club_name": "クラブ",
+        "market_value_in_eur": "市場価値 (€)"
+    })
+
+    if "クラブ" in ranking.columns:
+        ranking["クラブ"] = ranking["クラブ"].map(
+            lambda x: club_dict.get(x, x)
+        )
+
+    st.dataframe(
+        ranking,
+        use_container_width=True
+    )
+
+# ==========================================
+# CSV閲覧
+# ==========================================
+
+with st.expander("EAFC26データを見る"):
+    st.dataframe(ea)
+
+with st.expander("Transfermarktデータを見る"):
+    st.dataframe(tm)
