@@ -145,3 +145,113 @@ if player != "":
             )
 
             st.write("年齢：", age)
+# ==========================================
+# レーダーチャート
+# ==========================================
+
+st.divider()
+st.subheader("📊 能力レーダーチャート")
+
+radar_stats = ["PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
+
+values = [float(row[s]) for s in radar_stats]
+values += values[:1]
+
+angles = np.linspace(
+    0,
+    2 * np.pi,
+    len(radar_stats),
+    endpoint=False
+).tolist()
+
+angles += angles[:1]
+
+fig = plt.figure(figsize=(6, 6))
+
+ax = plt.subplot(111, polar=True)
+
+ax.plot(
+    angles,
+    values,
+    linewidth=2
+)
+
+ax.fill(
+    angles,
+    values,
+    alpha=0.25
+)
+
+ax.set_xticks(angles[:-1])
+ax.set_xticklabels(radar_stats)
+ax.set_ylim(0, 100)
+
+st.pyplot(fig)
+
+# ==========================================
+# 能力値グラフ
+# ==========================================
+
+st.divider()
+st.subheader("📈 能力値グラフ")
+
+graph = pd.DataFrame({
+    "能力": radar_stats,
+    "数値": [row[s] for s in radar_stats]
+})
+
+st.bar_chart(
+    graph.set_index("能力")
+)
+
+# ==========================================
+# EAFC26 基本情報
+# ==========================================
+
+st.divider()
+st.subheader("📋 EAFC26 基本情報")
+
+base_info = [
+    ("年齢", "Age"),
+    ("身長", "Height"),
+    ("体重", "Weight"),
+    ("利き足", "Preferred foot"),
+    ("逆足", "Weak foot"),
+    ("スキル", "Skill moves"),
+    ("ポジション", "Position"),
+    ("国籍", "Nation"),
+    ("リーグ", "League"),
+    ("チーム", "Team")
+]
+
+for title, col in base_info:
+    if col in ea.columns:
+        st.write(f"**{title}：** {row[col]}")
+
+# ==========================================
+# GK能力（GKのみ表示）
+# ==========================================
+
+gk_stats = [
+    "GK Diving",
+    "GK Handling",
+    "GK Kicking",
+    "GK Positioning",
+    "GK Reflexes"
+]
+
+if all(col in ea.columns for col in gk_stats):
+
+    if row["Position"] == "GK":
+
+        st.divider()
+        st.subheader("🧤 GK能力")
+
+        gk_df = pd.DataFrame({
+            "能力": gk_stats,
+            "数値": [row[s] for s in gk_stats]
+        })
+
+        st.bar_chart(
+            gk_df.set_index("能力")
+        )
