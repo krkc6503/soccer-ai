@@ -154,45 +154,44 @@ if player != "":
             )
 
             st.write("年齢：", age)
-        st.write("年齢：", age)
 
 
 # ==========================================
 # 移籍市場シミュレーター
 # ==========================================
 
-st.divider()
-st.subheader("💰 移籍市場シミュレーター")
+    st.divider()
+    st.subheader("💰 移籍市場シミュレーター")
 
-market = info["market_value_in_eur"]
-ovr = row["OVR"]
+    market = info["market_value_in_eur"]
+    ovr = row["OVR"]
 
-if ovr >= 90:
-    evaluation = "🔥 ワールドクラス"
-elif ovr >= 85:
-    evaluation = "⭐ トップ選手"
-elif ovr >= 80:
-    evaluation = "👍 優秀な選手"
-else:
-    evaluation = "📈 成長期待"
+    if ovr >= 90:
+        evaluation = "🔥 ワールドクラス"
+    elif ovr >= 85:
+        evaluation = "⭐ トップ選手"
+    elif ovr >= 80:
+        evaluation = "👍 優秀な選手"
+    else:
+        evaluation = "📈 成長期待"
 
-st.write("評価：", evaluation)
+    st.write("評価：", evaluation)
 
-if age <= 23:
-    age_text = "若手で将来性あり"
-elif age <= 29:
-    age_text = "全盛期"
-else:
-    age_text = "ベテランによる価値低下あり"
+    if age <= 23:
+        age_text = "若手で将来性あり"
+    elif age <= 29:
+        age_text = "全盛期"
+    else:
+        age_text = "ベテランによる価値低下あり" 
 
-st.write("年齢評価：", age_text)
+    st.write("年齢評価：", age_text)
 
-if market / 1_000_000 >= 100:
-    price_text = "高額選手"
-else:
-    price_text = "手頃な価格帯"
+    if market / 1_000_000 >= 100:
+        price_text = "高額選手"
+    else:
+        price_text = "手頃な価格帯"
 
-st.write("市場価値評価：", price_text)
+    st.write("市場価値評価：", price_text)
 # ==========================================
 # レーダーチャート
 # ==========================================
