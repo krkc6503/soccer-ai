@@ -150,45 +150,61 @@ if player != "":
 # ==========================================
 
 if player != "" and 'row' in locals():
+    st.divider()
 
-st.divider()
-st.subheader("📊 能力レーダーチャート")
+    st.subheader("📊 能力レーダーチャート")
 
-radar_stats = ["PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
+    radar_stats = ["PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
 
-values = [float(row[s]) for s in radar_stats]
-values += values[:1]
+    values = [float(row[s]) for s in radar_stats]
 
-angles = np.linspace(
-    0,
-    2 * np.pi,
-    len(radar_stats),
-    endpoint=False
-).tolist()
+    values += values[:1]
 
-angles += angles[:1]
+    angles = np.linspace(
 
-fig = plt.figure(figsize=(6, 6))
+        0,
 
-ax = plt.subplot(111, polar=True)
+        2*np.pi,
 
-ax.plot(
-    angles,
-    values,
-    linewidth=2
-)
+        len(radar_stats),
 
-ax.fill(
-    angles,
-    values,
-    alpha=0.25
-)
+        endpoint=False
 
-ax.set_xticks(angles[:-1])
-ax.set_xticklabels(radar_stats)
-ax.set_ylim(0, 100)
+    ).tolist()
 
-st.pyplot(fig)
+    angles += angles[:1]
+
+    fig = plt.figure(figsize=(6,6))
+
+    ax = plt.subplot(111, polar=True)
+
+    ax.plot(
+
+        angles,
+
+        values,
+
+        linewidth=2
+
+    )
+
+    ax.fill(
+
+        angles,
+
+        values,
+
+        alpha=0.25
+
+    )
+
+    ax.set_xticks(angles[:-1])
+
+    ax.set_xticklabels(radar_stats)
+
+    ax.set_ylim(0,100)
+
+    st.pyplot(fig)
 
 # ==========================================
 # 能力値グラフ
