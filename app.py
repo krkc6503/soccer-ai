@@ -246,8 +246,8 @@ if player != "" and 'row' in locals():
     ]
 
     for title, col in base_info:
-    if col in ea.columns:
-        st.write(f"**{title}：** {row[col]}")
+        if col in ea.columns:
+            st.write(f"**{title}：** {row[col]}")
 
 
 
