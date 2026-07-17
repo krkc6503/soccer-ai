@@ -94,11 +94,7 @@ if player != "":
 # 選手写真
 # ==========================================
 
-    st.image(
-
-    row["url"],
-        width=200
-)
+    st.write(row["url"])
 
     col1, col2 = st.columns([1,1])
 
