@@ -89,7 +89,18 @@ if player != "":
 
     row = result.iloc[0]
 
-    st.header(f"⭐ {row['Name']}")
+    st.header(f"⭐ {row['Name']}"
+
+# ==========================================
+# 選手写真
+# ==========================================
+
+photo_url = f"https://cdn.sofifa.net/players/{str(row['ID'])[:3]}/{row['ID']}.png"
+
+st.image(
+    photo_url,
+    width=200
+)
 
     col1, col2 = st.columns([1,1])
 
