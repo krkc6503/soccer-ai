@@ -262,22 +262,22 @@ gk_stats = [
     "GK Positioning",
     "GK Reflexes"
 ]
+if player != "" and 'row' in locals():
+    if all(col in ea.columns for col in gk_stats):
 
-if all(col in ea.columns for col in gk_stats):
+        if row["Position"] == "GK":
 
-    if row["Position"] == "GK":
+            st.divider()
+            st.subheader("🧤 GK能力")
 
-        st.divider()
-        st.subheader("🧤 GK能力")
+            gk_df = pd.DataFrame({
+                "能力": gk_stats,
+                "数値": [row[s] for s in gk_stats]
+            })
 
-        gk_df = pd.DataFrame({
-            "能力": gk_stats,
-            "数値": [row[s] for s in gk_stats]
-        })
-
-        st.bar_chart(
-            gk_df.set_index("能力")
-        )
+            st.bar_chart(
+                gk_df.set_index("能力")
+            )
 # ==========================================
 # 2選手比較
 # ==========================================
