@@ -96,7 +96,7 @@ if player != "":
 
     photo_url = f"https://cdn.sofifa.net/players/{str(row['ID'])[:3]}/{row['ID']}.png"
 
-st.image(
+    st.image(
     photo_url,
     width=200
 )
