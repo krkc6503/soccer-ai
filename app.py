@@ -105,11 +105,11 @@ if player != "":
 
     with col1:
 
-    st.subheader("EA FC26")
+        st.subheader("EA FC26")
 
-    st.metric("OVR", row["OVR"])
+        st.metric("OVR", row["OVR"])
 
-    stats = ["PAC","SHO","PAS","DRI","DEF","PHY"]
+        stats = ["PAC","SHO","PAS","DRI","DEF","PHY"]
 
     for s in stats:
         st.metric(s, row[s])
@@ -117,10 +117,10 @@ if player != "":
 
     with col2:
 
-    tm_result = tm[
-        tm["name"]
-        .astype(str)
-        .str.contains(player, case=False, na=False)
+        tm_result = tm[
+            tm["name"]
+            .astype(str)
+            .str.contains(player, case=False, na=False)
     ]
 
     if not tm_result.empty:
