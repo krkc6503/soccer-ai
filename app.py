@@ -228,7 +228,8 @@ if player != "" and 'row' in locals():
 # EAFC26 基本情報
 # ==========================================
 
-st.divider()
+if player != "" and 'row' in locals():
+    st.divider()
 st.subheader("📋 EAFC26 基本情報")
 
 base_info = [
@@ -247,6 +248,8 @@ base_info = [
 for title, col in base_info:
     if col in ea.columns:
         st.write(f"**{title}：** {row[col]}")
+
+
 
 # ==========================================
 # GK能力（GKのみ表示）
