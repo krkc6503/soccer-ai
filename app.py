@@ -98,7 +98,7 @@ if player != "":
 
     st.image(
     photo_url,
-    width=200
+        width=200
 )
 
 col1, col2 = st.columns([1,1])
