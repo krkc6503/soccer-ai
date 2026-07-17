@@ -89,7 +89,7 @@ if player != "":
 
     row = result.iloc[0]
 
-    st.header(f"⭐ {row['Name']}"
+    st.header(f"⭐ {row['Name']}")
 
 # ==========================================
 # 選手写真
