@@ -123,7 +123,7 @@ with col2:
         .str.contains(player, case=False, na=False)
     ]
 
-        if not tm_result.empty:
+    if not tm_result.empty:
 
             info = tm_result.iloc[0]
 
