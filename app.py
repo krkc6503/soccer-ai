@@ -94,12 +94,9 @@ if player != "":
 # 選手写真
 # ==========================================
 
-    st.write("ID:", row["ID"])
-
-    photo_url = f"https://drop-assets.ea.com/images/players/{player_id}.png"
-
     st.image(
-    photo_url,
+
+    row["url"],
         width=200
 )
 
