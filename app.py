@@ -355,3 +355,101 @@ with st.expander("EAFC26データを見る"):
 
 with st.expander("Transfermarktデータを見る"):
     st.dataframe(tm)
+# ==========================================
+# 日本語・英語検索しやすくする
+# ==========================================
+
+st.sidebar.divider()
+st.sidebar.subheader("🔍 クイック検索")
+
+player_list = sorted(
+    ea[player_column].dropna().astype(str).unique()
+)
+
+selected_player = st.sidebar.selectbox(
+    "一覧から選ぶ",
+    [""] + player_list
+)
+
+if selected_player != "":
+    st.info(f"選択中：{selected_player}")
+
+# ==========================================
+# 市場価値TOP10グラフ
+# ==========================================
+
+st.divider()
+st.header("📊 市場価値 TOP10")
+
+if "market_value_in_eur" in tm.columns:
+
+    top10 = (
+        tm.sort_values(
+            "market_value_in_eur",
+            ascending=False
+        )
+        .head(10)
+        .copy()
+    )
+
+    top10["market_value_in_eur"] = (
+        top10["market_value_in_eur"] / 1_000_000
+    )
+
+    chart = top10.set_index("name")["market_value_in_eur"]
+
+    st.bar_chart(chart)
+
+# ==========================================
+# データ件数
+# ==========================================
+
+st.divider()
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.metric(
+        "EAFC26選手数",
+        len(ea)
+    )
+
+with col2:
+    st.metric(
+        "Transfermarkt選手数",
+        len(tm)
+    )
+
+# ==========================================
+# ダウンロード
+# ==========================================
+
+st.divider()
+
+st.download_button(
+    "📥 EAFC26 CSVダウンロード",
+    ea.to_csv(index=False).encode("utf-8-sig"),
+    "EAFC26_export.csv",
+    "text/csv"
+)
+
+st.download_button(
+    "📥 Transfermarkt CSVダウンロード",
+    tm.to_csv(index=False).encode("utf-8-sig"),
+    "Transfermarkt_export.csv",
+    "text/csv"
+)
+
+# ==========================================
+# フッター
+# ==========================================
+
+st.divider()
+
+st.caption(
+    "EA FC26 × Transfermarkt Player Analysis System"
+)
+
+st.caption(
+    "Created with Streamlit"
+)
