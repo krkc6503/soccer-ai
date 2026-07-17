@@ -153,11 +153,11 @@ if player != "" and 'row' in locals():
     st.divider()
 
     st.subheader("📊 能力レーダーチャート")
-
+    
     radar_stats = ["PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
-
+    
     values = [float(row[s]) for s in radar_stats]
-
+    
     values += values[:1]
 
     angles = np.linspace(
