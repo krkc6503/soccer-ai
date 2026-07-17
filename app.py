@@ -210,7 +210,7 @@ if player != "" and 'row' in locals():
 # 能力値グラフ
 # ==========================================
 
-if selected_player:
+if player != "" and 'row' in locals():
     st.divider()
     st.subheader("📈 能力値グラフ")
 
