@@ -210,17 +210,19 @@ if player != "" and 'row' in locals():
 # 能力値グラフ
 # ==========================================
 
-st.divider()
-st.subheader("📈 能力値グラフ")
+if selected_player:
+    st.divider()
+　　 st.subheader("📈 能力値グラフ")
 
-graph = pd.DataFrame({
+    graph = pd.DataFrame({
     "能力": radar_stats,
     "数値": [row[s] for s in radar_stats]
-})
+    })
 
-st.bar_chart(
+    st.bar_chart(
     graph.set_index("能力")
-)
+    )
+
 
 # ==========================================
 # EAFC26 基本情報
