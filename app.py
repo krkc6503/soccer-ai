@@ -255,3 +255,136 @@ if all(col in ea.columns for col in gk_stats):
         st.bar_chart(
             gk_df.set_index("能力")
         )
+# ==========================================
+# 2選手比較
+# ==========================================
+
+st.divider()
+st.header("👥 2選手比較")
+
+players = sorted(
+    ea["Name"].dropna().astype(str).unique()
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    player1 = st.selectbox(
+        "選手①",
+        players,
+        key="player1"
+    )
+
+with col2:
+    player2 = st.selectbox(
+        "選手②",
+        players,
+        index=1 if len(players) > 1 else 0,
+        key="player2"
+    )
+
+if player1 != "" and player2 != "":
+
+    p1 = ea[ea["Name"] == player1].iloc[0]
+    p2 = ea[ea["Name"] == player2].iloc[0]
+
+    compare_stats = [
+        "PAC",
+        "SHO",
+        "PAS",
+        "DRI",
+        "DEF",
+        "PHY"
+    ]
+
+    compare_df = pd.DataFrame(
+        {
+            player1: [p1[s] for s in compare_stats],
+            player2: [p2[s] for s in compare_stats]
+        },
+        index=compare_stats
+    )
+
+    st.dataframe(compare_df)
+
+    st.bar_chart(compare_df.T)
+
+# ==========================================
+# 市場価値ランキング TOP20
+# ==========================================
+
+st.divider()
+st.header("💶 市場価値ランキング TOP20")
+
+ranking = (
+    tm.sort_values(
+        "market_value_in_eur",
+        ascending=False
+    )
+    .head(20)
+    .copy()
+)
+
+ranking["current_club_name"] = ranking["current_club_name"].map(
+    lambda x: club_dict.get(x, x)
+)
+
+ranking = ranking.rename(
+    columns={
+        "name": "選手名",
+        "current_club_name": "クラブ",
+        "market_value_in_eur": "市場価値 (€)"
+    }
+)
+
+st.dataframe(
+    ranking[
+        [
+            "選手名",
+            "クラブ",
+            "市場価値 (€)"
+        ]
+    ],
+    use_container_width=True
+)
+
+# ==========================================
+# 市場価値 TOP10 グラフ
+# ==========================================
+
+st.divider()
+st.header("📊 市場価値 TOP10")
+
+top10 = (
+    tm.sort_values(
+        "market_value_in_eur",
+        ascending=False
+    )
+    .head(10)
+    .copy()
+)
+
+top10["市場価値(M€)"] = (
+    top10["market_value_in_eur"] / 1_000_000
+)
+
+chart = top10.set_index("name")["市場価値(M€)"]
+
+st.bar_chart(chart)
+
+# ==========================================
+# Transfermarkt 基本情報
+# ==========================================
+
+st.divider()
+st.subheader("🌍 Transfermarktデータ")
+
+st.metric(
+    "登録選手数",
+    len(tm)
+)
+
+st.metric(
+    "EAFC26登録選手数",
+    len(ea)
+)
