@@ -101,9 +101,9 @@ if player != "":
         width=200
 )
 
-col1, col2 = st.columns([1,1])
+    col1, col2 = st.columns([1,1])
 
-with col1:
+    with col1:
 
     st.subheader("EA FC26")
 
@@ -115,7 +115,7 @@ with col1:
         st.metric(s, row[s])
 
 
-with col2:
+    with col2:
 
     tm_result = tm[
         tm["name"]
