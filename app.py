@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("⚽ EA FC26 × Transfermarkt 選手分析システム")
+st.title("サッカー移籍金予測AI")
 st.caption("EA FC26能力値 × Transfermarkt市場価値")
 
 # ==========================================
