@@ -87,10 +87,9 @@ if player != "":
         st.error("選手が見つかりません。")
         st.stop()
 
- row = result.iloc[0]
+    row = result.iloc[0]
 
-st.header(f"⭐ {row['Name']}")
-
+    st.header(f"⭐ {row['Name']}")
 # ==========================================
 # 選手写真
 # ==========================================
