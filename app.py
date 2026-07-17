@@ -94,7 +94,7 @@ if player != "":
 # 選手写真
 # ==========================================
 
-photo_url = f"https://cdn.sofifa.net/players/{str(row['ID'])[:3]}/{row['ID']}.png"
+    photo_url = f"https://cdn.sofifa.net/players/{str(row['ID'])[:3]}/{row['ID']}.png"
 
 st.image(
     photo_url,
