@@ -230,9 +230,9 @@ if player != "" and 'row' in locals():
 
 if player != "" and 'row' in locals():
     st.divider()
-st.subheader("📋 EAFC26 基本情報")
+    st.subheader("📋 EAFC26 基本情報")
 
-base_info = [
+    base_info = [
     ("年齢", "Age"),
     ("身長", "Height"),
     ("体重", "Weight"),
@@ -243,9 +243,9 @@ base_info = [
     ("国籍", "Nation"),
     ("リーグ", "League"),
     ("チーム", "Team")
-]
+    ]
 
-for title, col in base_info:
+    for title, col in base_info:
     if col in ea.columns:
         st.write(f"**{title}：** {row[col]}")
 
