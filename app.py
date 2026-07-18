@@ -203,6 +203,8 @@ if page == "選手分析":
         market = info["market_value_in_eur"]
         ovr = row["OVR"]
 
+    ovr = row["OVR"]
+    
     if ovr >= 90:
         evaluation = "🔥 ワールドクラス"
     elif ovr >= 85:
