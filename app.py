@@ -144,7 +144,7 @@ if page == "選手分析":
 
     photo_col, info_col = st.columns([1, 2])
 
-    with photo_url = row["card"]
+    with photo_col:
 
     st.image(photo_url, width=180)
     with info_col:
