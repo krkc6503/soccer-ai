@@ -139,69 +139,44 @@ if page == "選手分析":
 
     st.header(f"⭐ {row['Name']}")
 # ==========================================
-# 選手写真
+# 選手カード
 # ==========================================
 
-    st.image(
+    photo_col, info_col = st.columns([1, 2])
 
-    row["card"],
+    with photo_col:
+        st.image(photo_url, width=180)
 
-    width=250
-)
-    col1, col2 = st.columns([1,1])
-
-    with col1:
-
-        st.subheader("EA FC26")
-
+    with info_col:
+        st.header(f"⭐ {row['Name']}")
         st.metric("OVR", row["OVR"])
 
-        stats = ["PAC","SHO","PAS","DRI","DEF","PHY"]
+        if "Position" in row.index:
+            st.write(f"**ポジション：** {row['Position']}")
 
-    for s in stats:
-        st.metric(s, row[s])
+        if "Team" in row.index:
+            st.write(f"**クラブ：** {row['Team']}")
 
+        if "Nation" in row.index:
+            st.write(f"**国籍：** {row['Nation']}")
 
-    with col2:
+    st.divider()
 
-        tm_result = tm[
-            tm["name"]
-            .astype(str)
-            .str.contains(player, case=False, na=False)
-    ]
+    st.subheader("⚡ 能力値")
 
-    if not tm_result.empty:
+    c1, c2, c3 = st.columns(3)
 
-            info = tm_result.iloc[0]
+    with c1:
+        st.metric("PAC", row["PAC"])
+        st.metric("DRI", row["DRI"])
 
-            club = club_dict.get(
-                info["current_club_name"],
-                info["current_club_name"]
-            )
+    with c2:
+        st.metric("SHO", row["SHO"])
+        st.metric("DEF", row["DEF"])
 
-            st.subheader("Transfermarkt")
-
-            st.write("クラブ：", club)
-
-            st.write("ポジション：", info["position"])
-
-            st.metric(
-                "市場価値",
-                f"€{info['market_value_in_eur']:,.0f}"
-            )
-
-            st.metric(
-                "最高市場価値",
-                f"€{info['highest_market_value_in_eur']:,.0f}"
-            )
-
-            birth = pd.to_datetime(info["date_of_birth"])
-
-            age = int(
-                (pd.Timestamp.today()-birth).days/365.25
-            )
-
-            st.write("年齢：", age)
+    with c3:
+        st.metric("PAS", row["PAS"])
+        st.metric("PHY", row["PHY"])
 
 
 # ==========================================
