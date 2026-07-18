@@ -184,9 +184,24 @@ if page == "選手分析":
 
     st.divider()
     st.subheader("💰 移籍市場シミュレーター")
+# ==========================================
+# Transfermarktデータ取得
+# ==========================================
 
-    market = info["market_value_in_eur"]
-    ovr = row["OVR"]
+    tm_result = tm[
+        tm["name"]
+        .astype(str)
+        .str.contains(player, case=False, na=False)
+    ]
+
+    if not tm_result.empty:
+        info = tm_result.iloc[0]
+        market = info["market_value_in_eur"]
+    else:
+        market = 0
+
+        market = info["market_value_in_eur"]
+        ovr = row["OVR"]
 
     if ovr >= 90:
         evaluation = "🔥 ワールドクラス"
