@@ -491,41 +491,41 @@ if page == "ランキング":
     chart = top10.set_index("name")["市場価値(M€)"]
 
     st.bar_chart(chart)
-
+if page == "データ閲覧":
 # ==========================================
 # Transfermarkt 基本情報
 # ==========================================
 
-st.divider()
-st.subheader("🌍 Transfermarktデータ")
+    st.divider()
+    st.subheader("🌍 Transfermarktデータ")
 
-st.metric(
-    "登録選手数",
-    len(tm)
-)
+    st.metric(
+        "登録選手数",
+        len(tm)
+    )
 
-st.metric(
-    "EAFC26登録選手数",
-    len(ea)
-)
+    st.metric(
+        "EAFC26登録選手数",
+        len(ea)
+    )
 # ==========================================
 # CSV閲覧
 # ==========================================
 
-st.divider()
-st.header("📄 データ閲覧")
+    st.divider()
+    st.header("📄 データ閲覧")
 
-with st.expander("EAFC26 データを見る"):
-    st.dataframe(
-        ea,
-        use_container_width=True
-    )
+    with st.expander("EAFC26 データを見る"):
+        st.dataframe(
+            ea,
+            use_container_width=True
+        )
 
-with st.expander("Transfermarkt データを見る"):
-    st.dataframe(
-        tm,
-        use_container_width=True
-    )
+    with st.expander("Transfermarkt データを見る"):
+        st.dataframe(
+            tm,
+            use_container_width=True
+        )
 if page == "データ閲覧":
 # ==========================================
 # CSVダウンロード
