@@ -145,7 +145,7 @@ if page == "選手分析":
     photo_col, info_col = st.columns([1, 2])
 
     with photo_col:
-        st.image(photo_url, width=180)
+        st.image(row["card"], width=180)
     with info_col:
         st.header(f"⭐ {row['Name']}")
         st.metric("OVR", row["OVR"])
