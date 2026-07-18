@@ -124,7 +124,7 @@ if selected != "":
 # ==========================================
 # 選手表示
 # ==========================================
-if player != "":
+if page == "選手分析":
 
     result = ea[
         ea["Name"]
@@ -428,6 +428,7 @@ if player1 != "" and player2 != "":
     st.dataframe(compare_df)
 
     st.bar_chart(compare_df.T)
+    
 if page == "ランキング":
 
 # ==========================================
@@ -491,7 +492,6 @@ if page == "ランキング":
     chart = top10.set_index("name")["市場価値(M€)"]
 
     st.bar_chart(chart)
-    st.stop()
 
 # ==========================================
 # Transfermarkt 基本情報
@@ -554,7 +554,7 @@ if page == "データ閲覧":
             file_name="Transfermarkt_export.csv",
             mime="text/csv"
         )
-    st.stop()
+
 # ==========================================
 # データ件数
 # ==========================================
