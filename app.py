@@ -428,69 +428,70 @@ if player1 != "" and player2 != "":
     st.dataframe(compare_df)
 
     st.bar_chart(compare_df.T)
+if page == "ランキング":
 
 # ==========================================
 # 市場価値ランキング TOP20
 # ==========================================
+    st.divider()
+    st.header("💶 市場価値ランキング TOP20")
 
-st.divider()
-st.header("💶 市場価値ランキング TOP20")
-
-ranking = (
-    tm.sort_values(
-        "market_value_in_eur",
-        ascending=False
+    ranking = (
+        tm.sort_values(
+            "market_value_in_eur",
+            ascending=False
+        )
+        .head(20)
+        .copy()
     )
-    .head(20)
-    .copy()
-)
 
-ranking["current_club_name"] = ranking["current_club_name"].map(
-    lambda x: club_dict.get(x, x)
-)
+    ranking["current_club_name"] = ranking["current_club_name"].map(
+        lambda x: club_dict.get(x, x)
+　　　　)
 
-ranking = ranking.rename(
-    columns={
-        "name": "選手名",
-        "current_club_name": "クラブ",
-        "market_value_in_eur": "市場価値 (€)"
-    }
-)
+　　　　ranking = ranking.rename(
+        columns={
+            "name": "選手名",
+            "current_club_name": "クラブ",
+            "market_value_in_eur": "市場価値 (€)"
+        }
+    )
 
-st.dataframe(
-    ranking[
+    st.dataframe(
+        ranking[
         [
             "選手名",
             "クラブ",
             "市場価値 (€)"
         ]
-    ],
-    use_container_width=True
-)
+        ],
+        use_container_width=True
+    )
 
 # ==========================================
 # 市場価値 TOP10 グラフ
 # ==========================================
 
-st.divider()
-st.header("📊 市場価値 TOP10")
+    st.divider()
+    st.header("📊 市場価値 TOP10")
 
-top10 = (
-    tm.sort_values(
-        "market_value_in_eur",
-        ascending=False
+    top10 = (
+        tm.sort_values(
+            "market_value_in_eur",
+            ascending=False
+        )
+        .head(10)
+        .copy()
     )
-    .head(10)
-    .copy()
-)
 
-top10["市場価値(M€)"] = (
-    top10["market_value_in_eur"] / 1_000_000
-)
+    top10["市場価値(M€)"] = (
+        top10["market_value_in_eur"] / 1_000_000
+    )
 
-chart = top10.set_index("name")["市場価値(M€)"]
+    chart = top10.set_index("name")["市場価値(M€)"]
 
-st.bar_chart(chart)
+    st.bar_chart(chart)
+    st.stop()
 
 # ==========================================
 # Transfermarkt 基本情報
