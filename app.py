@@ -579,13 +579,13 @@ if page == "データ閲覧":
 # 列名確認（デバッグ用）
 # ==========================================
 
-with st.expander("🛠 デバッグ情報"):
+    with st.expander("🛠 デバッグ情報"):
 
-    st.write("EAFC26 Columns")
-    st.write(list(ea.columns))
+        st.write("EAFC26 Columns")
+        st.write(list(ea.columns))
 
-    st.write("Transfermarkt Columns")
-    st.write(list(tm.columns))
+        st.write("Transfermarkt Columns")
+        st.write(list(tm.columns))
 
 # ==========================================
 # フッター
