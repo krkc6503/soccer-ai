@@ -204,6 +204,7 @@ if page == "選手分析":
         ovr = row["OVR"]
 
     ovr = row["OVR"]
+    age = row["Age"]
     
     if ovr >= 90:
         evaluation = "🔥 ワールドクラス"
