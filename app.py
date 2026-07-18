@@ -447,7 +447,7 @@ if page == "ランキング":
 
     ranking["current_club_name"] = ranking["current_club_name"].map(
         lambda x: club_dict.get(x, x)
-　　　　)
+    )
 
 　　　　ranking = ranking.rename(
         columns={
