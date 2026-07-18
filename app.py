@@ -527,54 +527,54 @@ with st.expander("Transfermarkt データを見る"):
         tm,
         use_container_width=True
     )
-
+if page == "データ閲覧":
 # ==========================================
 # CSVダウンロード
 # ==========================================
 
-st.divider()
-st.header("📥 CSVダウンロード")
+    st.divider()
+    st.header("📥 CSVダウンロード")
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-with col1:
+    with col1:
 
-    st.download_button(
-        label="EAFC26 CSV",
-        data=ea.to_csv(index=False).encode("utf-8-sig"),
-        file_name="EAFC26_export.csv",
-        mime="text/csv"
-    )
+        st.download_button(
+            label="EAFC26 CSV",
+            data=ea.to_csv(index=False).encode("utf-8-sig"),
+            file_name="EAFC26_export.csv",
+            mime="text/csv"
+        )
 
-with col2:
+    with col2:
 
-    st.download_button(
-        label="Transfermarkt CSV",
-        data=tm.to_csv(index=False).encode("utf-8-sig"),
-        file_name="Transfermarkt_export.csv",
-        mime="text/csv"
-    )
+        st.download_button(
+            label="Transfermarkt CSV",
+            data=tm.to_csv(index=False).encode("utf-8-sig"),
+            file_name="Transfermarkt_export.csv",
+            mime="text/csv"
+        )
 
 # ==========================================
 # データ件数
 # ==========================================
 
-st.divider()
-st.header("📊 データ件数")
+    st.divider()
+    st.header("📊 データ件数")
 
-c1, c2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-with c1:
-    st.metric(
-        "EAFC26選手数",
-        len(ea)
-    )
+    with c1:
+        st.metric(
+            "EAFC26選手数",
+            len(ea)
+        )
 
-with c2:
-    st.metric(
-        "Transfermarkt選手数",
-        len(tm)
-    )
+    with c2:
+        st.metric(
+            "Transfermarkt選手数",
+            len(tm)
+        )
 
 # ==========================================
 # 列名確認（デバッグ用）
