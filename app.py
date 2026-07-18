@@ -373,59 +373,60 @@ if player != "" and 'row' in locals():
             st.bar_chart(
                 gk_df.set_index("能力")
             )
+if page == "選手分析":
 # ==========================================
 # 2選手比較
 # ==========================================
 
-st.divider()
-st.header("👥 2選手比較")
+    st.divider()
+    st.header("👥 2選手比較")
 
-players = sorted(
-    ea["Name"].dropna().astype(str).unique()
-)
-
-col1, col2 = st.columns(2)
-
-with col1:
-    player1 = st.selectbox(
-        "選手①",
-        players,
-        key="player1"
+    players = sorted(
+        ea["Name"].dropna().astype(str).unique()
     )
 
-with col2:
-    player2 = st.selectbox(
-        "選手②",
-        players,
-        index=1 if len(players) > 1 else 0,
-        key="player2"
-    )
+    col1, col2 = st.columns(2)
 
-if player1 != "" and player2 != "":
+    with col1:
+        player1 = st.selectbox(
+            "選手①",
+            players,
+            key="player1"
+        )
 
-    p1 = ea[ea["Name"] == player1].iloc[0]
-    p2 = ea[ea["Name"] == player2].iloc[0]
+    with col2:
+        player2 = st.selectbox(
+            "選手②",
+            players,
+            index=1 if len(players) > 1 else 0,
+            key="player2"
+        )
 
-    compare_stats = [
-        "PAC",
-        "SHO",
-        "PAS",
-        "DRI",
-        "DEF",
-        "PHY"
-    ]
+    if player1 != "" and player2 != "":
 
-    compare_df = pd.DataFrame(
-        {
-            player1: [p1[s] for s in compare_stats],
-            player2: [p2[s] for s in compare_stats]
-        },
-        index=compare_stats
-    )
+        p1 = ea[ea["Name"] == player1].iloc[0]
+        p2 = ea[ea["Name"] == player2].iloc[0]
 
-    st.dataframe(compare_df)
+        compare_stats = [
+            "PAC",
+            "SHO",
+            "PAS",
+            "DRI",
+            "DEF",
+            "PHY"
+        ]
 
-    st.bar_chart(compare_df.T)
+        compare_df = pd.DataFrame(
+            {
+                player1: [p1[s] for s in compare_stats],
+                player2: [p2[s] for s in compare_stats]
+            },
+            index=compare_stats
+        )
+
+        st.dataframe(compare_df)
+
+        st.bar_chart(compare_df.T)
     
 if page == "ランキング":
 
