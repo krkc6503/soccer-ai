@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 # ページ設定
 # ==========================================
 st.set_page_config(
-    page_title="EA FC26 × Transfermarkt",
+    page_title="EA FC27 × Transfermarkt",
     page_icon="⚽",
     layout="wide"
 )
 
 st.title("サッカー移籍金予測AI")
-st.caption("EA FC26能力値 × Transfermarkt市場価値")
+st.caption("EA FC27能力値 × Transfermarkt市場価値")
 
 # ==========================================
 # データ読み込み
@@ -49,11 +49,11 @@ page = st.sidebar.radio("🏠 メニュー",
 
 if page == "ホーム":
 
-    st.title("⚽ EA FC26 × Transfermarkt")
+    st.title("⚽ EA FC27 × Transfermarkt")
     st.subheader("選手分析システム")
 
     st.write("""
-このアプリでは、EA FC26とTransfermarktのデータを使って
+このアプリでは、EA FC27とTransfermarktのデータを使って
 世界中のサッカー選手を分析できます。
 """)
 
@@ -62,7 +62,7 @@ if page == "ホーム":
     col1, col2 = st.columns(2)
 
     with col1:
-        st.metric("EA FC26登録選手数", len(ea))
+        st.metric("EA FC27登録選手数", len(ea))
 
     with col2:
         st.metric("Transfermarkt登録選手数", len(tm))
@@ -312,12 +312,12 @@ if player != "" and 'row' in locals():
 
 
 # ==========================================
-# EAFC26 基本情報
+# EAFC27 基本情報
 # ==========================================
 
 if player != "" and 'row' in locals():
     st.divider()
-    st.subheader("📋 EAFC26 基本情報")
+    st.subheader("📋 EAFC27 基本情報")
 
     base_info = [
     ("年齢", "Age"),
@@ -507,7 +507,7 @@ if page == "データ閲覧":
     st.divider()
     st.header("📄 データ閲覧")
 
-    with st.expander("EAFC26 データを見る"):
+    with st.expander("EAFC27 データを見る"):
         st.dataframe(
             ea,
             use_container_width=True
@@ -573,7 +573,7 @@ if page == "データ閲覧":
 
     with st.expander("🛠 デバッグ情報"):
 
-        st.write("EAFC26 Columns")
+        st.write("EAFC27 Columns")
         st.write(list(ea.columns))
 
         st.write("Transfermarkt Columns")
@@ -585,7 +585,7 @@ if page == "データ閲覧":
 
 st.divider()
 
-st.caption("⚽ EA FC26 × Transfermarkt Player Analysis System")
+st.caption("⚽ EA FC27 × Transfermarkt Player Analysis System")
 
 st.caption("Created with Streamlit")
 
