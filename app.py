@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # ページ設定
 # ==========================================
 st.set_page_config(
-    page_title="EA FC27 × Transfermarkt",
+    page_title="EA FC26 × Transfermarkt",
     page_icon="⚽",
     layout="wide"
 )
@@ -21,7 +21,7 @@ st.caption("EA FC27能力値 × Transfermarkt市場価値")
 @st.cache_data
 def load_data():
 
-    ea = pd.read_csv("EAFC27-Men(1).csv")
+    ea = pd.read_csv("EAFC26-Men(1).csv")
     tm = pd.read_csv("players_small(1).csv")
 
     ea.columns = ea.columns.str.strip()
