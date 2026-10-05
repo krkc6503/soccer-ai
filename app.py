@@ -794,18 +794,30 @@ elif page == "ランキング":
         range(1, len(ranking) + 1)
     )
 
-    cols = [
-        col for col in [
-            "順位",
-            "Name",
-            ranking_type,
-            "OVR",
-            "Team",
-            "Position",
-            "Nation"
-        ]
-        if col in ranking.columns
-    ]
+   # 表示する列
+cols = [
+    "順位",
+    "Name",
+    "OVR",
+    "PAC",
+    "SHO",
+    "PAS",
+    "DRI",
+    "DEF",
+    "PHY",
+    "Team",
+    "Position",
+    "Nation"
+]
+
+# 実際に存在する列だけにする
+cols = [
+    col for col in cols
+    if col in ranking.columns
+]
+
+# 念のため重複列を完全に削除
+cols = list(dict.fromkeys(cols))
 
     st.dataframe(
         ranking[cols],
