@@ -1,418 +1,962 @@
 import streamlit as st
-import requests
-import re
-import json
-import html as html_lib
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+
+
+# =========================================================
+# ページ設定
+# =========================================================
 
 st.set_page_config(
-    page_title="FC27 Salah 画像調査",
+    page_title="EA FC27 × Transfermarkt",
     page_icon="⚽",
-    layout="centered"
+    layout="wide"
 )
 
-st.title("⚽ FC27 Salah 画像調査")
 
-PLAYER_ID = "209331"
+# =========================================================
+# データ読み込み
+# =========================================================
 
-URL = (
-    "https://www.ea.com/ja/games/ea-sports-fc/"
-    "ratings/player-ratings/mohamed-salah/209331"
-)
+@st.cache_data
+def load_data():
 
-headers = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/154.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7",
-    "Referer": "https://www.ea.com/"
-}
+    # EA FC27
+    ea = pd.read_csv(
+        "EAFC27-Men(1).csv",
+        encoding="utf-8-sig"
+    )
 
-# ==========================================
-# EA公式ページ取得
-# ==========================================
+    # Transfermarkt
+    tm = pd.read_csv(
+        "players_small(1).csv",
+        encoding="utf-8-sig"
+    )
+
+    # 列名の前後の空白を削除
+    ea.columns = ea.columns.astype(str).str.strip()
+    tm.columns = tm.columns.astype(str).str.strip()
+
+    # 数値列
+    ea_numeric = [
+        "ID",
+        "Rank",
+        "OVR",
+        "PAC",
+        "SHO",
+        "PAS",
+        "DRI",
+        "DEF",
+        "PHY",
+        "Age"
+    ]
+
+    for col in ea_numeric:
+        if col in ea.columns:
+            ea[col] = pd.to_numeric(
+                ea[col],
+                errors="coerce"
+            )
+
+    # 文字列列
+    for col in ea.columns:
+        if ea[col].dtype == "object":
+            ea[col] = ea[col].fillna("").astype(str).str.strip()
+
+    # Transfermarktの数値列
+    tm_numeric = [
+        "market_value_in_eur",
+        "highest_market_value_in_eur"
+    ]
+
+    for col in tm_numeric:
+        if col in tm.columns:
+            tm[col] = pd.to_numeric(
+                tm[col],
+                errors="coerce"
+            )
+
+    for col in tm.columns:
+        if tm[col].dtype == "object":
+            tm[col] = tm[col].fillna("").astype(str).str.strip()
+
+    return ea, tm
+
+
+# =========================================================
+# データ読み込みエラー対策
+# =========================================================
 
 try:
-    response = requests.get(
-        URL,
-        headers=headers,
-        timeout=20
+    ea, tm = load_data()
+
+except FileNotFoundError as e:
+
+    st.error("❌ CSVファイルが見つかりません。")
+
+    st.write("GitHubに次の2つのファイルがあるか確認してください。")
+
+    st.code(
+        "EAFC27-Men(1).csv\n"
+        "players_small(1).csv"
     )
 
-    st.write("HTTPステータス:", response.status_code)
+    st.stop()
 
-    if response.status_code != 200:
-        st.error("EA公式ページを取得できませんでした。")
-        st.stop()
+except pd.errors.EmptyDataError:
 
-    page = response.text
+    st.error("❌ CSVファイルの中身が空です。")
+
+    st.stop()
 
 except Exception as e:
-    st.error("ページ取得エラー")
+
+    st.error("❌ データ読み込み中にエラーが発生しました。")
+
     st.code(str(e))
+
     st.stop()
 
-st.success("EA公式ページの取得に成功しました！")
 
-# HTMLエンティティを戻す
-page = html_lib.unescape(page)
+# =========================================================
+# 必須列チェック
+# =========================================================
 
-# ==========================================
-# 209331の出現位置
-# ==========================================
-
-positions = [
-    m.start()
-    for m in re.finditer(
-        re.escape(PLAYER_ID),
-        page
-    )
+required_ea = [
+    "Name",
+    "OVR",
+    "PAC",
+    "SHO",
+    "PAS",
+    "DRI",
+    "DEF",
+    "PHY"
 ]
 
-st.subheader("① 209331の検索結果")
+missing_ea = [
+    col for col in required_ea
+    if col not in ea.columns
+]
 
-st.write(
-    f"「209331」が {len(positions)} 回見つかりました。"
-)
+if missing_ea:
 
-if not positions:
-    st.error("209331が見つかりませんでした。")
+    st.error("❌ EA FC27 CSVに必要な列がありません。")
+
+    st.write("不足している列：")
+    st.write(missing_ea)
+
+    st.write("現在の列：")
+    st.write(list(ea.columns))
+
     st.stop()
 
-# ==========================================
-# 画像関連キーワード
-# ==========================================
 
-keywords = [
-    "image",
-    "imageUrl",
-    "imageURL",
-    "imageUrl",
-    "avatar",
-    "avatarUrl",
-    "portrait",
-    "playerImage",
-    "player_image",
-    "card",
-    "playerCard",
-    "headshot",
-    "photo",
-    "ratings-images",
-    "pulse.ea.com",
-    "209331"
-]
+# =========================================================
+# Transfermarkt列の確認
+# =========================================================
 
-# ==========================================
-# 209331周辺の情報を検索
-# ==========================================
-
-st.subheader("② 209331周辺の画像情報")
-
-found_sections = []
-
-for position in positions:
-
-    start = max(0, position - 10000)
-    end = min(len(page), position + 10000)
-
-    section = page[start:end]
-
-    # 画像関連キーワードがある部分だけ確認
-    for keyword in keywords:
-
-        if keyword.lower() in section.lower():
-
-            # キーワードの位置
-            matches = re.finditer(
-                re.escape(keyword),
-                section,
-                flags=re.IGNORECASE
-            )
-
-            for match in matches:
-
-                local_start = max(
-                    0,
-                    match.start() - 500
-                )
-
-                local_end = min(
-                    len(section),
-                    match.end() + 1000
-                )
-
-                snippet = section[
-                    local_start:local_end
-                ]
-
-                if snippet not in found_sections:
-                    found_sections.append(snippet)
-
-# ==========================================
-# 表示
-# ==========================================
-
-if not found_sections:
-
-    st.warning(
-        "画像関連データを見つけられませんでした。"
-    )
-
-else:
-
-    st.success(
-        f"{len(found_sections)}個の関連データを見つけました。"
-    )
-
-    for i, snippet in enumerate(
-        found_sections[:20],
-        1
-    ):
-
-        with st.expander(
-            f"関連データ {i}"
-        ):
-
-            st.code(
-                snippet,
-                language="text"
-            )
-
-# ==========================================
-# URL候補を抽出
-# ==========================================
-
-st.subheader("③ 画像URL候補")
-
-# HTML内にあるURLを全部取得
-all_urls = re.findall(
-    r'https?://[^"\'<>\s]+',
-    page
+has_tm = (
+    "name" in tm.columns
+    and "market_value_in_eur" in tm.columns
 )
 
-clean_urls = []
 
-for url in all_urls:
+# =========================================================
+# サイドバー
+# =========================================================
 
-    url = url.replace(
-        "\\/",
-        "/"
+st.sidebar.title("⚽ EA FC27")
+
+page = st.sidebar.radio(
+    "ページ",
+    [
+        "ホーム",
+        "選手分析",
+        "ランキング",
+        "データ閲覧"
+    ]
+)
+
+
+# =========================================================
+# タイトル
+# =========================================================
+
+st.title("⚽ EA FC27 × Transfermarkt 選手分析アプリ")
+
+st.caption(
+    "EA FC27能力値とTransfermarkt市場価値を比較できます。"
+)
+
+
+# =========================================================
+# 共通関数
+# =========================================================
+
+def format_money(value):
+
+    if pd.isna(value):
+        return "データなし"
+
+    value = float(value)
+
+    if value >= 1_000_000_000:
+        return f"€{value / 1_000_000_000:.2f}B"
+
+    if value >= 1_000_000:
+        return f"€{value / 1_000_000:.1f}M"
+
+    if value >= 1_000:
+        return f"€{value / 1_000:.0f}K"
+
+    return f"€{value:,.0f}"
+
+
+def find_player(name):
+
+    result = ea[
+        ea["Name"].astype(str).str.lower()
+        == str(name).lower()
+    ]
+
+    if len(result) > 0:
+        return result.iloc[0]
+
+    result = ea[
+        ea["Name"].astype(str).str.contains(
+            str(name),
+            case=False,
+            na=False
+        )
+    ]
+
+    if len(result) > 0:
+        return result.iloc[0]
+
+    return None
+
+
+def get_tm_player(player_name):
+
+    if not has_tm:
+        return None
+
+    result = tm[
+        tm["name"].astype(str).str.lower()
+        == str(player_name).lower()
+    ]
+
+    if len(result) > 0:
+        return result.iloc[0]
+
+    result = tm[
+        tm["name"].astype(str).str.contains(
+            str(player_name),
+            case=False,
+            na=False
+        )
+    ]
+
+    if len(result) > 0:
+        return result.iloc[0]
+
+    return None
+
+
+def make_radar(player):
+
+    stats = [
+        "PAC",
+        "SHO",
+        "PAS",
+        "DRI",
+        "DEF",
+        "PHY"
+    ]
+
+    values = []
+
+    for stat in stats:
+
+        value = pd.to_numeric(
+            player.get(stat, 0),
+            errors="coerce"
+        )
+
+        if pd.isna(value):
+            value = 0
+
+        values.append(float(value))
+
+    values_closed = values + [values[0]]
+    stats_closed = stats + [stats[0]]
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatterpolar(
+            r=values_closed,
+            theta=stats_closed,
+            fill="toself",
+            name=str(player["Name"])
+        )
     )
 
-    url = html_lib.unescape(url)
-
-    url = url.rstrip(
-        "\\'\"<>),;"
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100]
+            )
+        ),
+        showlegend=True,
+        height=450
     )
 
-    if url not in clean_urls:
-        clean_urls.append(url)
+    return fig
 
-# 画像っぽいURL
-image_urls = []
 
-for url in clean_urls:
+def get_rating_level(ovr):
 
-    lower = url.lower()
+    try:
+        ovr = float(ovr)
+    except:
+        return "評価不明"
 
-    if any(
-        x in lower
-        for x in [
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".webp",
-            ".avif",
-            "image",
-            "portrait",
-            "player",
-            "ratings-images",
-            "pulse.ea.com"
+    if ovr >= 90:
+        return "🌟 ワールドクラス"
+
+    if ovr >= 85:
+        return "🔥 トップクラス"
+
+    if ovr >= 80:
+        return "⭐ 高能力"
+
+    if ovr >= 75:
+        return "💪 優秀"
+
+    if ovr >= 70:
+        return "👍 平均以上"
+
+    return "⚽ 発展途上"
+
+
+def scout_report(player):
+
+    name = player["Name"]
+
+    ovr = float(player.get("OVR", 0) or 0)
+    pac = float(player.get("PAC", 0) or 0)
+    sho = float(player.get("SHO", 0) or 0)
+    pas = float(player.get("PAS", 0) or 0)
+    dri = float(player.get("DRI", 0) or 0)
+    deff = float(player.get("DEF", 0) or 0)
+    phy = float(player.get("PHY", 0) or 0)
+
+    stats = {
+        "PAC": pac,
+        "SHO": sho,
+        "PAS": pas,
+        "DRI": dri,
+        "DEF": deff,
+        "PHY": phy
+    }
+
+    best_stat = max(
+        stats,
+        key=stats.get
+    )
+
+    position = str(
+        player.get("Position", "")
+    )
+
+    team = str(
+        player.get("Team", "")
+    )
+
+    report = f"""
+### 📝 AIスカウトレポート
+
+**{name}** は総合値 **{ovr:.0f}** の選手です。
+
+- ポジション：{position}
+- チーム：{team}
+- 最大の特徴：**{best_stat} {stats[best_stat]:.0f}**
+- 評価：**{get_rating_level(ovr)}**
+
+EA FC27の能力値を見ると、
+**{best_stat}** が特に高いことが特徴です。
+
+6つの能力値を総合すると、
+この選手は現在の能力を生かしたプレーで
+チームに貢献できる選手と考えられます。
+"""
+
+    return report
+
+
+# =========================================================
+# HOME
+# =========================================================
+
+if page == "ホーム":
+
+    st.header("🏠 ホーム")
+
+    st.write(
+        "EA FC27の選手能力値とTransfermarktの市場価値を "
+        "組み合わせて分析するアプリです。"
+    )
+
+    st.divider()
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric(
+            "EA FC27選手数",
+            f"{len(ea):,}人"
+        )
+
+    with col2:
+        if "OVR" in ea.columns:
+            avg_ovr = ea["OVR"].mean()
+            st.metric(
+                "平均OVR",
+                f"{avg_ovr:.1f}"
+            )
+        else:
+            st.metric(
+                "平均OVR",
+                "-"
+            )
+
+    with col3:
+        st.metric(
+            "最高OVR",
+            f"{ea['OVR'].max():.0f}"
+        )
+
+    st.divider()
+
+    st.subheader("⭐ FC27 TOP10")
+
+    top10 = (
+        ea
+        .sort_values("OVR", ascending=False)
+        .head(10)
+        .copy()
+    )
+
+    show_cols = [
+        col for col in [
+            "Rank",
+            "Name",
+            "OVR",
+            "PAC",
+            "SHO",
+            "PAS",
+            "DRI",
+            "DEF",
+            "PHY",
+            "Team",
+            "Position"
         ]
-    ):
+        if col in top10.columns
+    ]
 
-        if url not in image_urls:
-            image_urls.append(url)
-
-# 209331がURLに入っているものを優先
-priority_urls = []
-
-for url in image_urls:
-
-    if PLAYER_ID in url:
-
-        priority_urls.append(url)
-
-for url in image_urls:
-
-    if url not in priority_urls:
-        priority_urls.append(url)
-
-st.write(
-    f"画像URL候補: {len(priority_urls)}件"
-)
-
-if priority_urls:
-
-    for i, url in enumerate(
-        priority_urls[:50],
-        1
-    ):
-
-        st.write(
-            f"**候補 {i}**"
-        )
-
-        st.code(url)
-
-else:
-
-    st.warning(
-        "画像URL候補が見つかりませんでした。"
+    st.dataframe(
+        top10[show_cols],
+        use_container_width=True,
+        hide_index=True
     )
 
-# ==========================================
-# Salah専用と思われるURLをテスト
-# ==========================================
 
-st.subheader("④ Salah専用URLのテスト")
+# =========================================================
+# 選手分析
+# =========================================================
 
-salah_urls = [
-    url
-    for url in priority_urls
-    if PLAYER_ID in url
-]
+elif page == "選手分析":
 
-if not salah_urls:
+    st.header("🔎 選手分析")
 
-    st.info(
-        "URLそのものに209331が含まれる画像URLはありませんでした。"
+    search = st.text_input(
+        "選手名を入力",
+        placeholder="例：Mohamed Salah"
     )
 
-else:
+    if search:
 
-    for i, image_url in enumerate(
-        salah_urls[:10],
-        1
-    ):
-
-        st.write(
-            f"### テスト {i}"
-        )
-
-        st.code(image_url)
-
-        try:
-
-            r = requests.get(
-                image_url,
-                headers=headers,
-                timeout=10
+        candidates = ea[
+            ea["Name"].astype(str).str.contains(
+                search,
+                case=False,
+                na=False
             )
+        ].copy()
 
-            content_type = r.headers.get(
-                "Content-Type",
-                ""
-            )
-
-            st.write(
-                "HTTP:",
-                r.status_code
-            )
-
-            st.write(
-                "Content-Type:",
-                content_type
-            )
-
-            if (
-                r.status_code == 200
-                and content_type.startswith("image/")
-            ):
-
-                st.success(
-                    "画像として取得できました！"
-                )
-
-                st.image(
-                    r.content,
-                    width=300
-                )
-
-        except Exception as e:
+        if len(candidates) == 0:
 
             st.warning(
-                "取得エラー"
+                "選手が見つかりませんでした。"
             )
 
-            st.code(str(e))
+        else:
 
-# ==========================================
-# ⑤ ページ内のJSONらしきデータ
-# ==========================================
+            if len(candidates) > 1:
 
-st.subheader("⑤ ページ内JSONデータ")
+                selected_name = st.selectbox(
+                    "選手を選択してください",
+                    candidates["Name"].tolist()
+                )
 
-json_blocks = re.findall(
-    r'<script[^>]*>(.*?)</script>',
-    page,
-    flags=re.DOTALL | re.IGNORECASE
-)
+                row = candidates[
+                    candidates["Name"] == selected_name
+                ].iloc[0]
 
-json_hits = []
+            else:
 
-for block in json_blocks:
+                row = candidates.iloc[0]
 
-    if PLAYER_ID in block:
+            st.divider()
 
-        json_hits.append(block)
+            # -------------------------------------------------
+            # 選手基本情報
+            # -------------------------------------------------
 
-st.write(
-    f"209331を含むscriptが {len(json_hits)}個あります。"
-)
-
-for i, block in enumerate(
-    json_hits[:10],
-    1
-):
-
-    with st.expander(
-        f"JSON/script {i}"
-    ):
-
-        # 長すぎる場合は周辺だけ表示
-        positions2 = [
-            m.start()
-            for m in re.finditer(
-                PLAYER_ID,
-                block
+            st.subheader(
+                f"⚽ {row['Name']}"
             )
+
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "OVR",
+                    f"{row['OVR']:.0f}"
+                )
+
+            with col2:
+                st.metric(
+                    "PAC",
+                    f"{row['PAC']:.0f}"
+                )
+
+            with col3:
+                st.metric(
+                    "SHO",
+                    f"{row['SHO']:.0f}"
+                )
+
+            with col4:
+                st.metric(
+                    "PAS",
+                    f"{row['PAS']:.0f}"
+                )
+
+            col1, col2, col3, col4 = st.columns(4)
+
+            with col1:
+                st.metric(
+                    "DRI",
+                    f"{row['DRI']:.0f}"
+                )
+
+            with col2:
+                st.metric(
+                    "DEF",
+                    f"{row['DEF']:.0f}"
+                )
+
+            with col3:
+                st.metric(
+                    "PHY",
+                    f"{row['PHY']:.0f}"
+                )
+
+            with col4:
+                st.metric(
+                    "評価",
+                    get_rating_level(row["OVR"])
+                )
+
+            st.divider()
+
+            # -------------------------------------------------
+            # 基本情報
+            # -------------------------------------------------
+
+            st.subheader("📋 基本情報")
+
+            info_col1, info_col2 = st.columns(2)
+
+            with info_col1:
+
+                st.write(
+                    f"**名前：** {row.get('Name', '-')}"
+                )
+
+                st.write(
+                    f"**チーム：** {row.get('Team', '-')}"
+                )
+
+                st.write(
+                    f"**リーグ：** {row.get('League', '-')}"
+                )
+
+                st.write(
+                    f"**ポジション：** {row.get('Position', '-')}"
+                )
+
+            with info_col2:
+
+                st.write(
+                    f"**国籍：** {row.get('Nation', '-')}"
+                )
+
+                age = row.get("Age", "")
+
+                if pd.notna(age) and str(age) != "":
+                    st.write(
+                        f"**年齢：** {float(age):.0f}"
+                    )
+
+                st.write(
+                    f"**Rank：** #{int(row['Rank']) if pd.notna(row['Rank']) else '-'}"
+                )
+
+                st.write(
+                    f"**ID：** {int(row['ID']) if pd.notna(row['ID']) else '-'}"
+                )
+
+            st.divider()
+
+            # -------------------------------------------------
+            # レーダーチャート
+            # -------------------------------------------------
+
+            st.subheader("📊 能力値レーダーチャート")
+
+            st.plotly_chart(
+                make_radar(row),
+                use_container_width=True
+            )
+
+            # -------------------------------------------------
+            # 能力値
+            # -------------------------------------------------
+
+            st.subheader("📈 能力値")
+
+            stat_data = pd.DataFrame(
+                {
+                    "能力": [
+                        "PAC",
+                        "SHO",
+                        "PAS",
+                        "DRI",
+                        "DEF",
+                        "PHY"
+                    ],
+                    "数値": [
+                        row["PAC"],
+                        row["SHO"],
+                        row["PAS"],
+                        row["DRI"],
+                        row["DEF"],
+                        row["PHY"]
+                    ]
+                }
+            )
+
+            st.bar_chart(
+                stat_data.set_index("能力")
+            )
+
+            # -------------------------------------------------
+            # Transfermarkt
+            # -------------------------------------------------
+
+            st.divider()
+
+            st.subheader(
+                "💰 Transfermarkt市場価値"
+            )
+
+            tm_row = get_tm_player(
+                row["Name"]
+            )
+
+            if tm_row is not None:
+
+                market_value = tm_row.get(
+                    "market_value_in_eur",
+                    np.nan
+                )
+
+                highest_value = tm_row.get(
+                    "highest_market_value_in_eur",
+                    np.nan
+                )
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+
+                    st.metric(
+                        "現在の市場価値",
+                        format_money(market_value)
+                    )
+
+                with col2:
+
+                    st.metric(
+                        "最高市場価値",
+                        format_money(highest_value)
+                    )
+
+            else:
+
+                st.info(
+                    "Transfermarktに一致する選手データがありません。"
+                )
+
+            # -------------------------------------------------
+            # AIスカウト
+            # -------------------------------------------------
+
+            st.divider()
+
+            st.subheader(
+                "🤖 AIスカウト"
+            )
+
+            st.markdown(
+                scout_report(row)
+            )
+
+            # -------------------------------------------------
+            # 画像なしの理由
+            # -------------------------------------------------
+
+            st.divider()
+
+            st.caption(
+                "※ EA FC27の画像URLは使用していません。"
+                "そのため、画像URLの403エラーやcard/Image列による"
+                "エラーは発生しません。"
+            )
+
+
+# =========================================================
+# ランキング
+# =========================================================
+
+elif page == "ランキング":
+
+    st.header("🏆 ランキング")
+
+    ranking_type = st.selectbox(
+        "ランキングを選択",
+        [
+            "OVR",
+            "PAC",
+            "SHO",
+            "PAS",
+            "DRI",
+            "DEF",
+            "PHY"
+        ]
+    )
+
+    top_n = st.slider(
+        "表示人数",
+        min_value=5,
+        max_value=50,
+        value=10
+    )
+
+    ranking = (
+        ea
+        .sort_values(
+            ranking_type,
+            ascending=False
+        )
+        .head(top_n)
+        .copy()
+    )
+
+    ranking.insert(
+        0,
+        "順位",
+        range(1, len(ranking) + 1)
+    )
+
+    cols = [
+        col for col in [
+            "順位",
+            "Name",
+            ranking_type,
+            "OVR",
+            "Team",
+            "Position",
+            "Nation"
+        ]
+        if col in ranking.columns
+    ]
+
+    st.dataframe(
+        ranking[cols],
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.divider()
+
+    st.subheader(
+        f"📊 {ranking_type} TOP10"
+    )
+
+    chart_data = ranking.head(10).copy()
+
+    st.bar_chart(
+        chart_data.set_index("Name")[ranking_type]
+    )
+
+
+# =========================================================
+# データ閲覧
+# =========================================================
+
+elif page == "データ閲覧":
+
+    st.header("📊 データ閲覧")
+
+    st.write(
+        f"現在 **{len(ea):,}人** のFC27選手データがあります。"
+    )
+
+    st.divider()
+
+    # -------------------------------------------------
+    # フィルター
+    # -------------------------------------------------
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        teams = sorted(
+            [
+                str(x)
+                for x in ea["Team"].dropna().unique()
+                if str(x).strip() != ""
+            ]
+        )
+
+        selected_team = st.selectbox(
+            "チーム",
+            ["すべて"] + teams
+        )
+
+    with col2:
+
+        positions = sorted(
+            [
+                str(x)
+                for x in ea["Position"].dropna().unique()
+                if str(x).strip() != ""
+            ]
+        )
+
+        selected_position = st.selectbox(
+            "ポジション",
+            ["すべて"] + positions
+        )
+
+    with col3:
+
+        min_ovr = st.slider(
+            "最低OVR",
+            0,
+            100,
+            70
+        )
+
+    filtered = ea.copy()
+
+    if selected_team != "すべて":
+
+        filtered = filtered[
+            filtered["Team"] == selected_team
         ]
 
-        if positions2:
+    if selected_position != "すべて":
 
-            for pos in positions2[:5]:
+        filtered = filtered[
+            filtered["Position"] == selected_position
+        ]
 
-                start = max(
-                    0,
-                    pos - 2000
-                )
+    filtered = filtered[
+        filtered["OVR"] >= min_ovr
+    ]
 
-                end = min(
-                    len(block),
-                    pos + 5000
-                )
+    st.write(
+        f"該当選手：**{len(filtered):,}人**"
+    )
 
-                st.code(
-                    block[start:end],
-                    language="json"
-                )
+    display_cols = [
+        col for col in [
+            "ID",
+            "Rank",
+            "Name",
+            "OVR",
+            "PAC",
+            "SHO",
+            "PAS",
+            "DRI",
+            "DEF",
+            "PHY",
+            "Age",
+            "Nation",
+            "League",
+            "Team",
+            "Position"
+        ]
+        if col in filtered.columns
+    ]
+
+    st.dataframe(
+        filtered[display_cols],
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # -------------------------------------------------
+    # CSVダウンロード
+    # -------------------------------------------------
+
+    csv_data = filtered[display_cols].to_csv(
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    st.download_button(
+        label="📥 表示中のデータをCSVでダウンロード",
+        data=csv_data,
+        file_name="FC27_filtered_players.csv",
+        mime="text/csv"
+    )
+
+
+# =========================================================
+# フッター
+# =========================================================
 
 st.divider()
 
-st.info(
-    "この画面の「②」「③」「⑤」に出た内容を確認すれば、"
-    "Salah専用画像の場所を特定できます。"
+st.caption(
+    "EA FC27 × Transfermarkt | Player Analysis System"
 )
