@@ -788,37 +788,46 @@ elif page == "ランキング":
         .copy()
     )
 
+    # 順位を追加
     ranking.insert(
         0,
         "順位",
         range(1, len(ranking) + 1)
     )
 
-   # 表示する列
-cols = [
-    "順位",
-    "Name",
-    "OVR",
-    "PAC",
-    "SHO",
-    "PAS",
-    "DRI",
-    "DEF",
-    "PHY",
-    "Team",
-    "Position",
-    "Nation"
-]
+    # 重複した列があれば削除
+    ranking = ranking.loc[
+        :,
+        ~ranking.columns.duplicated()
+    ]
 
-# 実際に存在する列だけにする
-cols = [
-    col for col in cols
-    if col in ranking.columns
-]
+    # 表示する列
+    cols = [
+        "順位",
+        "Name",
+        "OVR",
+        "PAC",
+        "SHO",
+        "PAS",
+        "DRI",
+        "DEF",
+        "PHY",
+        "Team",
+        "Position",
+        "Nation"
+    ]
 
-# 念のため重複列を完全に削除
-cols = list(dict.fromkeys(cols))
+    # 存在する列だけ表示
+    cols = [
+        col
+        for col in cols
+        if col in ranking.columns
+    ]
 
+    # 念のため重複を削除
+    cols = list(dict.fromkeys(cols))
+
+    # ランキング表
     st.dataframe(
         ranking[cols],
         use_container_width=True,
@@ -835,6 +844,130 @@ cols = list(dict.fromkeys(cols))
 
     st.bar_chart(
         chart_data.set_index("Name")[ranking_type]
+    )
+
+
+# =========================================================
+# データ閲覧
+# =========================================================
+
+elif page == "データ閲覧":
+
+    st.header("📊 データ閲覧")
+
+    st.write(
+        f"現在 **{len(ea):,}人** のFC27選手データがあります。"
+    )
+
+    st.divider()
+
+    # フィルター
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        teams = sorted(
+            [
+                str(x)
+                for x in ea["Team"].dropna().unique()
+                if str(x).strip() != ""
+            ]
+        )
+
+        selected_team = st.selectbox(
+            "チーム",
+            ["すべて"] + teams
+        )
+
+    with col2:
+
+        positions = sorted(
+            [
+                str(x)
+                for x in ea["Position"].dropna().unique()
+                if str(x).strip() != ""
+            ]
+        )
+
+        selected_position = st.selectbox(
+            "ポジション",
+            ["すべて"] + positions
+        )
+
+    with col3:
+
+        min_ovr = st.slider(
+            "最低OVR",
+            0,
+            100,
+            70
+        )
+
+    filtered = ea.copy()
+
+    if selected_team != "すべて":
+
+        filtered = filtered[
+            filtered["Team"] == selected_team
+        ]
+
+    if selected_position != "すべて":
+
+        filtered = filtered[
+            filtered["Position"] == selected_position
+        ]
+
+    filtered = filtered[
+        filtered["OVR"] >= min_ovr
+    ]
+
+    st.write(
+        f"該当選手：**{len(filtered):,}人**"
+    )
+
+    display_cols = [
+        col
+        for col in [
+            "ID",
+            "Rank",
+            "Name",
+            "OVR",
+            "PAC",
+            "SHO",
+            "PAS",
+            "DRI",
+            "DEF",
+            "PHY",
+            "Age",
+            "Nation",
+            "League",
+            "Team",
+            "Position"
+        ]
+        if col in filtered.columns
+    ]
+
+    st.dataframe(
+        filtered[display_cols],
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # CSVダウンロード
+
+    csv_data = filtered[
+        display_cols
+    ].to_csv(
+        index=False,
+        encoding="utf-8-sig"
+    )
+
+    st.download_button(
+        label="📥 表示中のデータをCSVでダウンロード",
+        data=csv_data,
+        file_name="FC27_filtered_players.csv",
+        mime="text/csv"
     )
 
 
