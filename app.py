@@ -21,7 +21,7 @@ st.caption("EA FC27能力値 × Transfermarkt市場価値")
 @st.cache_data
 def load_data():
 
-    ea = pd.read_csv("EAFC26-Men(1).csv")
+    ea = pd.read_csv("EAFC27-Men(1).csv")
     tm = pd.read_csv("players_small(1).csv")
 
     ea.columns = ea.columns.str.strip()
