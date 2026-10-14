@@ -855,6 +855,32 @@ elif page == "ランキング":
         use_container_width=True,
         hide_index=True
     )
+        # ランキング選手の画像
+    st.subheader("🖼️ ランキング選手")
+
+    for _, player in ranking.iterrows():
+
+        player_id = player.get("ID")
+
+        image_col, info_col = st.columns([1, 4])
+
+        with image_col:
+            if pd.notna(player_id):
+                player_image = get_player_image(int(player_id))
+
+                if player_image:
+                    st.image(player_image, width=100)
+
+        with info_col:
+            st.write(
+                f"**{int(player['順位'])}位：{player['Name']}**"
+            )
+            st.write(
+                f"OVR {player['OVR']:.0f}｜"
+                f"チーム：{player.get('Team', '-')}"
+            )
+
+        st.divider()
 
     st.divider()
 
