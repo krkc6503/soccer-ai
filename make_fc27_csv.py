@@ -21,14 +21,32 @@ session.headers.update(headers)
 all_players = []
 page = 1
 
+
 while True:
-    response = session.get(
-        API_URL,
-        params={"page": page},
-        timeout=60,
-    )
-    response.raise_for_status()
-    result = response.json()
+    result = None
+
+    # 通信に失敗したら最大5回まで再試行
+    for attempt in range(5):
+        try:
+            response = session.get(
+                API_URL,
+                params={"page": page},
+                timeout=60,
+            )
+            response.raise_for_status()
+            result = response.json()
+            break
+
+        except Exception as e:
+            print(
+                f"ページ {page} の取得失敗 "
+                f"({attempt + 1}/5): {e}"
+            )
+
+            if attempt < 4:
+                time.sleep(3 * (attempt + 1))
+            else:
+                raise
 
     players = result.get("data", [])
     all_players.extend(players)
@@ -42,9 +60,10 @@ while True:
         break
 
     page += 1
-    time.sleep(0.2)
+    time.sleep(0.5)
 
 print("取得した総件数:", len(all_players))
+
 
 
 def get_nested(data, *keys):
