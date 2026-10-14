@@ -92,23 +92,20 @@ for p in all_players:
     league = get_nested(p, "league", "name") or ""
     club = get_nested(p, "club", "name") or ""
 
-    # 女子リーグ・カスタムリーグの選手を除外
+    # 女子リーグ・レジェンド用リーグ・クラブを除外
     excluded_words = [
         "women",
         "woman",
         "female",
-        "women's",
-        "custom",
         "classic",
+        "icons",
+        "heroes",
+        "custom",
     ]
 
-    league_lower = league.lower()
-    club_lower = club.lower()
+    text_to_check = (league + " " + club).lower()
 
-    if any(word in league_lower for word in excluded_words):
-        continue
-
-    if any(word in club_lower for word in excluded_words):
+    if any(word in text_to_check for word in excluded_words):
         continue
 
     rows.append({
