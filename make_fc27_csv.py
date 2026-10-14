@@ -57,11 +57,32 @@ def get_nested(data, *keys):
 
 rows = []
 
+
 for p in all_players:
     attributes = p.get("attributes") or {}
 
-    # 通常の選手とレジェンド等を区別する条件は
-    # API仕様を確認してから追加する
+    league = get_nested(p, "league", "name") or ""
+    club = get_nested(p, "club", "name") or ""
+
+    # 女子リーグ・カスタムリーグの選手を除外
+    excluded_words = [
+        "women",
+        "woman",
+        "female",
+        "women's",
+        "custom",
+        "classic",
+    ]
+
+    league_lower = league.lower()
+    club_lower = club.lower()
+
+    if any(word in league_lower for word in excluded_words):
+        continue
+
+    if any(word in club_lower for word in excluded_words):
+        continue
+
     rows.append({
         "ID": p.get("id"),
         "Name": p.get("common_name") or p.get("name"),
@@ -75,10 +96,11 @@ for p in all_players:
         "PHY": attributes.get("physical"),
         "Age": p.get("age"),
         "Nation": get_nested(p, "nation", "name"),
-        "League": get_nested(p, "league", "name"),
-        "Team": get_nested(p, "club", "name"),
+        "League": league,
+        "Team": club,
         "Position": p.get("position"),
     })
+
 
 df = pd.DataFrame(rows)
 
