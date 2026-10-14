@@ -22,6 +22,26 @@ st.set_page_config(
 # =========================================================
 
 @st.cache_data
+@st.cache_data(ttl=3600)
+def get_player_image(player_id):
+    token = st.secrets["FCRADAR_CDN_TOKEN"]
+
+    url = (
+        f"https://pub-api.fcradar.gg/cdn/"
+        f"{token}/FC27/heads/{int(player_id)}.png"
+    )
+
+    try:
+        response = requests.get(url, timeout=15)
+
+        if response.status_code == 200:
+            if "image" in response.headers.get("Content-Type", ""):
+                return response.content
+
+    except Exception:
+        pass
+
+    return None
 def load_data():
 
     # EA FC27
