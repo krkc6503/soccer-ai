@@ -1,4 +1,5 @@
-name: Test FC27 Image
+
+name: Test FC27 API
 
 on:
   workflow_dispatch:
@@ -19,5 +20,7 @@ jobs:
       - name: Install requests
         run: pip install requests
 
-      - name: Run image test
-        run: python test_image.py
+      - name: Run FC27 API test
+        env:
+          FCRADAR_API_KEY: ${{ secrets.FCRADAR_API_KEY }}
+        run: python test_fc27_api.py
