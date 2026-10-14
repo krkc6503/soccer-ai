@@ -1,49 +1,91 @@
+
+import os
+import time
 import requests
-from bs4 import BeautifulSoup
 import pandas as pd
 
-url = "https://www.ea.com/games/ea-sports-fc/ratings"
+API_URL = "https://pub-api.fcradar.gg/v1/games/fc27/players"
+API_KEY = os.environ.get("FCRADAR_API_KEY")
+
+if not API_KEY:
+    raise RuntimeError("FCRADAR_API_KEY が設定されていません")
 
 headers = {
-    "User-Agent": "Mozilla/5.0"
+    "Authorization": f"Bearer {API_KEY}",
+    "Accept": "application/json",
 }
 
-response = requests.get(url, headers=headers)
+session = requests.Session()
+session.headers.update(headers)
 
-print("ステータスコード:", response.status_code)
+all_players = []
+page = 1
 
-soup = BeautifulSoup(response.text, "html.parser")
+while True:
+    response = session.get(
+        API_URL,
+        params={"page": page},
+        timeout=60,
+    )
+    response.raise_for_status()
+    result = response.json()
 
-# ページ内のtableを探す
-tables = soup.find_all("table")
+    players = result.get("data", [])
+    all_players.extend(players)
 
-print("見つかったtable数:", len(tables))
+    meta = result.get("meta", {})
+    last_page = int(meta.get("lastPage", page))
 
-if len(tables) == 0:
-    print("選手データのtableが見つかりませんでした。")
-    print("ページのHTMLを確認します。")
-    print(response.text[:5000])
-else:
-    for i, table in enumerate(tables):
-        try:
-            df = pd.read_html(str(table))[0]
+    print(f"ページ {page}/{last_page}: {len(players)}人取得")
 
-            print("table", i, "の行数:", len(df))
-            print(df.head())
+    if page >= last_page:
+        break
 
-            # FC27の選手データらしい表を探す
-            required_columns = ["OVR", "PAC", "SHO", "PAS", "DRI", "DEF", "PHY"]
+    page += 1
+    time.sleep(0.2)
 
-            if all(col in df.columns for col in required_columns):
-                df.to_csv(
-                    "EAFC27-Men(1).csv",
-                    index=False,
-                    encoding="utf-8-sig"
-                )
+print("取得した総件数:", len(all_players))
 
-                print("FC27のCSVを作成しました！")
-                print("行数:", len(df))
-                break
 
-        except Exception as e:
-            print("table", i, "読み込み失敗:", e)
+def get_nested(data, *keys):
+    for key in keys:
+        if not isinstance(data, dict):
+            return None
+        data = data.get(key)
+    return data
+
+
+rows = []
+
+for p in all_players:
+    attributes = p.get("attributes") or {}
+
+    # 通常の選手とレジェンド等を区別する条件は
+    # API仕様を確認してから追加する
+    rows.append({
+        "ID": p.get("id"),
+        "Name": p.get("common_name") or p.get("name"),
+        "GENDER": "Men's Football",
+        "OVR": p.get("overall_rating"),
+        "PAC": attributes.get("pace"),
+        "SHO": attributes.get("shooting"),
+        "PAS": attributes.get("passing"),
+        "DRI": attributes.get("dribbling"),
+        "DEF": attributes.get("defending"),
+        "PHY": attributes.get("physical"),
+        "Age": p.get("age"),
+        "Nation": get_nested(p, "nation", "name"),
+        "League": get_nested(p, "league", "name"),
+        "Team": get_nested(p, "club", "name"),
+        "Position": p.get("position"),
+    })
+
+df = pd.DataFrame(rows)
+
+output_file = "EAFC27-Men(1).csv"
+df.to_csv(output_file, index=False, encoding="utf-8-sig")
+
+print("CSVを作成しました:", output_file)
+print("CSVの行数:", len(df))
+print("列名:", list(df.columns))
+print(df.head(5).to_string(index=False))
