@@ -2,7 +2,7 @@ import requests
 
 player_id = 209331
 
-cdn_token = "YOUR_CDN_TOKEN"
+cdn_token = "683b134a5008444f979ff3ad23c248a1"
 
 url = (
     f"https://pub-api.fcradar.gg/cdn/"
