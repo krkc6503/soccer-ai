@@ -73,7 +73,16 @@ def get_nested(data, *keys):
         data = data.get(key)
     return data
 
+import json
 
+for p in all_players:
+    name = str(p.get("name", ""))
+    common_name = str(p.get("common_name", ""))
+
+    if any(x in (name + common_name).lower()
+           for x in ["mia hamm", "ronaldo"]):
+        print("選手データ確認:")
+        print(json.dumps(p, ensure_ascii=False, indent=2))
 rows = []
 
 
