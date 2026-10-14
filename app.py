@@ -548,9 +548,20 @@ elif page == "選手分析":
             # 選手基本情報
             # -------------------------------------------------
 
-            st.subheader(
-                f"⚽ {row['Name']}"
-            )
+            # 選手名と画像を横並びにする
+            image_col, name_col = st.columns([1, 3])
+
+            with image_col:
+                player_id = row.get("ID")
+
+                if pd.notna(player_id):
+                    player_image = get_player_image(int(player_id))
+
+                    if player_image:
+                        st.image(player_image, width=160)
+
+            with name_col:
+                st.subheader(f"⚽ {row['Name']}")
 
             col1, col2, col3, col4 = st.columns(4)
 
