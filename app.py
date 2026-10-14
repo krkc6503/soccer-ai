@@ -770,30 +770,7 @@ elif page == "選手分析":
                 scout_report(row)
             )
 
-            # -------------------------------------------------
-            # 選手画像
-            # -------------------------------------------------
-
-            st.divider()
-
-            st.subheader("🖼️ 選手画像")
-
-            player_id = row.get("ID")
-
-            if pd.notna(player_id):
-                player_image = get_player_image(int(player_id))
-
-                if player_image:
-                    st.image(
-                        player_image,
-                        caption=row["Name"],
-                        width=220
-                    )
-                else:
-                    st.info("この選手の画像を取得できませんでした。")
-            else:
-                st.info("選手IDがないため、画像を表示できません。")
-
+            
 
 # =========================================================
 # ランキング
