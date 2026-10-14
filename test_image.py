@@ -2,25 +2,24 @@ import requests
 
 player_id = 209331
 
-urls = [
-    f"https://ratings-images-prod.pulse.ea.com/FC27/full/player-portraits/p{player_id}.png",
-    f"https://ratings-images-prod.pulse.ea.com/FC27/components/items/{player_id}_en.webp",
-]
+cdn_token = "YOUR_CDN_TOKEN"
 
-for i, url in enumerate(urls, 1):
-    print("試しています:", url)
+url = (
+    f"https://pub-api.fcradar.gg/cdn/"
+    f"{cdn_token}/FC27/heads/{player_id}.png"
+)
 
-    r = requests.get(
-        url,
-        headers={"User-Agent": "Mozilla/5.0"},
-        timeout=20
-    )
+response = requests.get(url, timeout=20)
 
-    print("ステータス:", r.status_code)
-    print("サイズ:", len(r.content))
+print("画像URL:", url.replace(cdn_token, "[HIDDEN]"))
+print("ステータス:", response.status_code)
+print("Content-Type:", response.headers.get("Content-Type"))
+print("画像サイズ:", len(response.content))
 
-    if r.status_code == 200:
-        with open(f"salah_test_{i}.png", "wb") as f:
-            f.write(r.content)
-
-        print("成功しました！")
+if response.status_code == 200 and "image" in response.headers.get("Content-Type", ""):
+    with open("salah_test.png", "wb") as f:
+        f.write(response.content)
+    print("画像取得成功！")
+else:
+    print("画像取得失敗")
+    print(response.text[:300])
