@@ -50,9 +50,10 @@ while True:
 
     players = result.get("data", [])
     all_players.extend(players)
+    
     if page == 1:
-    print("選手データの項目一覧:")
-    print(list(players[0].keys()) if players else "データなし")
+        print("選手データの項目一覧:")
+        print(list(players[0].keys()) if players else "データなし")
 
     meta = result.get("meta", {})
     last_page = int(meta.get("lastPage", page))
