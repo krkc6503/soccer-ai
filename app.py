@@ -201,6 +201,9 @@ page = st.sidebar.radio(
         "監督キャリア"
     ]
 )
+if page == "監督キャリア":
+    render_career_mode(ea)
+    st.stop()
 
 
 # =========================================================
