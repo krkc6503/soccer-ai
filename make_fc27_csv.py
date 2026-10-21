@@ -149,6 +149,10 @@ def main():
         attributes = player.get("attributes") or {}
         league = get_nested(player, "league", "name") or ""
         club = get_nested(player, "club", "name") or ""
+        # テスト用チームを除外
+        if club.strip().lower().startswith("marketing team"):
+            excluded_count += 1
+            continue
 
         rows.append({
             "ID": player.get("id"),
