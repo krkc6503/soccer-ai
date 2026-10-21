@@ -97,7 +97,7 @@ for p in all_players:
     club = get_nested(p, "club", "name") or ""
     # クラブとリーグが両方ない選手を除外
     if not league and not club:
-    continue
+        continue
 
     # 女子リーグ・レジェンド用リーグ・クラブを除外
     excluded_words = [
