@@ -174,6 +174,12 @@ def main():
         })
 
     df = pd.DataFrame(rows)
+    # 総合評価（OVR）が高い順に順位を設定
+    df["Rank"] = (
+        df["OVR"]
+        .rank(method="min", ascending=False)
+        .astype("Int64")
+    )
 
     output_file = "EAFC27-Men(1).csv"
     df.to_csv(output_file, index=False, encoding="utf-8-sig")
