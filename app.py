@@ -775,7 +775,6 @@ def _ludo_global_square(color, pos):
     return (LUDO_STARTS[color] + pos) % LUDO_TRACK_LEN
 
 
-```python
 def _ludo_roll(game):
     if game.get("winner") or game.get("rolled"):
         return
