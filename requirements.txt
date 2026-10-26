@@ -1,5 +1,8 @@
 streamlit
 pandas
 numpy
+matplotlib
 plotly
+scikit-learn
+Pillow
 streamlit-sortables>=0.3.1
