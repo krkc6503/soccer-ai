@@ -210,29 +210,64 @@ def _simulate_league_score(home_strength, away_strength):
 
 
 def _league_table(state):
-    teams = state.get("league_teams", [])
-    rows = {team: {"クラブ": team, "試合": 0, "勝": 0, "分": 0, "敗": 0,
-                   "得点": 0, "失点": 0, "勝ち点": 0} for team in teams}
-    for fixtures in state.get("schedule", []):
-        for f in fixtures:
-            if not f.get("played"):
+    """Build a league table safely, including when a save has no team list yet."""
+    schedule = state.get("schedule", []) or []
+    teams = list(state.get("league_teams", []) or [])
+
+    # Recover team names from the fixture list if older saved state lacks league_teams.
+    for fixtures in schedule:
+        for fixture in (fixtures or []):
+            if not isinstance(fixture, dict):
                 continue
-            home, away = f["home"], f["away"]
-            hg, ag = int(f["home_goals"]), int(f["away_goals"])
+            for key in ("home", "away"):
+                name = fixture.get(key)
+                if name and name not in teams:
+                    teams.append(name)
+
+    columns = ["クラブ", "試合", "勝", "分", "敗", "得点", "失点", "得失点差", "勝ち点"]
+    rows = {
+        team: {"クラブ": team, "試合": 0, "勝": 0, "分": 0, "敗": 0,
+               "得点": 0, "失点": 0, "得失点差": 0, "勝ち点": 0}
+        for team in teams
+    }
+
+    for fixtures in schedule:
+        for fixture in (fixtures or []):
+            if not isinstance(fixture, dict) or not fixture.get("played"):
+                continue
+            home, away = fixture.get("home"), fixture.get("away")
+            if not home or not away:
+                continue
+            # Ensure every played fixture's clubs appear in the table.
+            for team in (home, away):
+                if team not in rows:
+                    rows[team] = {"クラブ": team, "試合": 0, "勝": 0, "分": 0, "敗": 0,
+                                  "得点": 0, "失点": 0, "得失点差": 0, "勝ち点": 0}
+            try:
+                hg, ag = int(fixture.get("home_goals", 0)), int(fixture.get("away_goals", 0))
+            except (TypeError, ValueError):
+                continue
             for team, gf, ga in ((home, hg, ag), (away, ag, hg)):
                 rows[team]["試合"] += 1
                 rows[team]["得点"] += gf
                 rows[team]["失点"] += ga
             if hg > ag:
-                rows[home]["勝"] += 1; rows[away]["敗"] += 1
+                rows[home]["勝"] += 1
+                rows[away]["敗"] += 1
                 rows[home]["勝ち点"] += 3
             elif hg < ag:
-                rows[away]["勝"] += 1; rows[home]["敗"] += 1
+                rows[away]["勝"] += 1
+                rows[home]["敗"] += 1
                 rows[away]["勝ち点"] += 3
             else:
-                rows[home]["分"] += 1; rows[away]["分"] += 1
-                rows[home]["勝ち点"] += 1; rows[away]["勝ち点"] += 1
-    table = pd.DataFrame(list(rows.values()))
+                rows[home]["分"] += 1
+                rows[away]["分"] += 1
+                rows[home]["勝ち点"] += 1
+                rows[away]["勝ち点"] += 1
+
+    table = pd.DataFrame(list(rows.values()), columns=columns)
+    if table.empty:
+        return pd.DataFrame(columns=columns)
     table["得失点差"] = table["得点"] - table["失点"]
     return table.sort_values(["勝ち点", "得失点差", "得点"], ascending=False).reset_index(drop=True)
 
