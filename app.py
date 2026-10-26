@@ -705,235 +705,555 @@ def render_career_mode(ea):
 # ==========================================
 # おまけ：ルドー
 # ==========================================
+import random
+import html
+
 LUDO_COLORS = ["赤", "青", "緑", "黄色"]
 LUDO_EMOJI = {"赤": "🔴", "青": "🔵", "緑": "🟢", "黄色": "🟡"}
+LUDO_HEX = {"赤": "#e53935", "青": "#1e88e5", "緑": "#43a047", "黄色": "#fdd835"}
 LUDO_TRACK_LEN = 52
 LUDO_FINISH = 57
 
-def _ludo_new_game(names):
+LUDO_TRACK = [
+    (6, 1), (6, 2), (6, 3), (6, 4), (6, 5),
+    (5, 6), (4, 6), (3, 6), (2, 6), (1, 6), (0, 6),
+    (0, 7), (0, 8),
+    (1, 8), (2, 8), (3, 8), (4, 8), (5, 8),
+    (6, 9), (6, 10), (6, 11), (6, 12), (6, 13), (6, 14),
+    (7, 14), (8, 14),
+    (8, 13), (8, 12), (8, 11), (8, 10), (8, 9),
+    (9, 8), (10, 8), (11, 8), (12, 8), (13, 8), (14, 8),
+    (14, 7), (14, 6),
+    (13, 6), (12, 6), (11, 6), (10, 6), (9, 6),
+    (8, 5), (8, 4), (8, 3), (8, 2), (8, 1), (8, 0),
+    (7, 0), (6, 0)
+]
+
+LUDO_STARTS = {"赤": 0, "青": 13, "緑": 26, "黄色": 39}
+LUDO_SAFE_SQUARES = {0, 8, 13, 21, 26, 34, 39, 47}
+
+LUDO_LANES = {
+    "赤": [(7, 1), (7, 2), (7, 3), (7, 4), (7, 5), (7, 6)],
+    "青": [(13, 7), (12, 7), (11, 7), (10, 7), (9, 7), (8, 7)],
+    "緑": [(1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7)],
+    "黄色": [(7, 13), (7, 12), (7, 11), (7, 10), (7, 9), (7, 8)]
+}
+
+
+def _ludo_new_game(names, cpu_opponent=False):
+    actual_names = list(names)
+    colors = LUDO_COLORS[:len(actual_names)]
+
+    if cpu_opponent and len(actual_names) == 1:
+        actual_names.append("コンピューター")
+        colors = ["赤", "青"]
+
     return {
-        "names": names,
-        "colors": LUDO_COLORS[:len(names)],
-        "positions": {color: [-1, -1, -1, -1] for color in LUDO_COLORS[:len(names)]},
+        "names": actual_names,
+        "colors": colors,
+        "human_count": len(names),
+        "cpu_opponent": cpu_opponent,
+        "positions": {c: [-1, -1, -1, -1] for c in colors},
         "turn": 0,
         "dice": None,
         "winner": None,
         "message": "サイコロを振ってゲーム開始！",
-        "rolled": False,
+        "rolled": False
     }
 
+
+def _ludo_possible_moves(game, color, dice):
+    positions = game["positions"][color]
+    return [
+        i for i, pos in enumerate(positions)
+        if (pos == -1 and dice == 6)
+        or (0 <= pos < LUDO_FINISH and pos + dice <= LUDO_FINISH)
+    ]
+
+
+def _ludo_global_square(color, pos):
+    return (LUDO_STARTS[color] + pos) % LUDO_TRACK_LEN
+
+
 def _ludo_roll(game):
-    import random
-    if game.get("winner"):
+    if game.get("winner") or game.get("rolled"):
         return
-    if game.get("rolled"):
-        return
+
     value = random.randint(1, 6)
     game["dice"] = value
     game["rolled"] = True
+
     color = game["colors"][game["turn"]]
-    positions = game["positions"][color]
-    possible = [i for i, pos in enumerate(positions) if (pos == -1 and value == 6) or (0 <= pos < LUDO_FINISH and pos + value <= LUDO_FINISH)]
+    player = game["names"][game["turn"]]
+    possible = _ludo_possible_moves(game, color, value)
+
     if not possible:
-        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} は {value}。動かせるコマがないので次の人へ。"
-        game["rolled"] = False
+        game["message"] = (
+            f"{LUDO_EMOJI[color]} {player} の出目は {value}。"
+            "動かせるコマがないので次の人へ。"
+        )
         game["dice"] = None
+        game["rolled"] = False
         game["turn"] = (game["turn"] + 1) % len(game["colors"])
     else:
-        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} の出目は {value}。動かすコマを選んでね。"
+        game["message"] = (
+            f"{LUDO_EMOJI[color]} {player} の出目は {value}。"
+            "動かすコマを選んでね。"
+        )
+
 
 def _ludo_move(game, piece_index):
     color = game["colors"][game["turn"]]
-    value = game["dice"]
+    player = game["names"][game["turn"]]
+    value = game.get("dice")
+
     if value is None:
         return
-    pos = game["positions"][color][piece_index]
-    if pos == -1:
+
+    positions = game["positions"][color]
+    old_pos = positions[piece_index]
+
+    if old_pos == -1:
         if value != 6:
             return
         new_pos = 0
     else:
-        new_pos = pos + value
+        new_pos = old_pos + value
+
     if new_pos > LUDO_FINISH:
-        game["message"] = "ゴールにはぴったりの出目が必要だよ。別のコマを選んでね。"
+        game["message"] = "ゴールにはぴったりの出目が必要だよ。"
         return
-    game["positions"][color][piece_index] = new_pos
-    # Captures are possible only on the shared 52-space track, not in home lanes.
+
+    positions[piece_index] = new_pos
+    captured_names = []
+
     if 0 <= new_pos < LUDO_TRACK_LEN:
-        global_square = (new_pos + LUDO_COLORS.index(color) * 13) % LUDO_TRACK_LEN
-        safe_squares = {0, 8, 13, 21, 26, 34, 39, 47}
-        captured = []
-        if global_square not in safe_squares:
+        square = _ludo_global_square(color, new_pos)
+
+        if square not in LUDO_SAFE_SQUARES:
             for other in game["colors"]:
                 if other == color:
                     continue
+
                 for j, other_pos in enumerate(game["positions"][other]):
                     if 0 <= other_pos < LUDO_TRACK_LEN:
-                        other_square = (other_pos + LUDO_COLORS.index(other) * 13) % LUDO_TRACK_LEN
-                        if other_square == global_square:
+                        other_square = _ludo_global_square(other, other_pos)
+
+                        if other_square == square:
                             game["positions"][other][j] = -1
-                            captured.append(game["names"][game["colors"].index(other)])
-    if all(x == LUDO_FINISH for x in game["positions"][color]):
-        game["winner"] = game["names"][game["turn"]]
-        game["message"] = f"🏆 {game['winner']}（{color}）の勝ち！"
+                            captured_names.append(
+                                game["names"][game["colors"].index(other)]
+                            )
+
+    if all(pos == LUDO_FINISH for pos in positions):
+        game["winner"] = player
+        game["message"] = f"🏆 {player}（{color}）の勝ち！"
     else:
-        suffix = f" {', '.join(captured)} のコマを戻した！" if 'captured' in locals() and captured else ""
-        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} がコマ{piece_index + 1}を動かした。{suffix}"
-        if value != 6:
-            game["turn"] = (game["turn"] + 1) % len(game["colors"])
-        else:
+        suffix = ""
+        if captured_names:
+            suffix = " 相手のコマをスタートに戻した！"
+
+        game["message"] = (
+            f"{LUDO_EMOJI[color]} {player} がコマ{piece_index + 1}を動かした。"
+            f"{suffix}"
+        )
+
+        if value == 6:
             game["message"] += " 6が出たので、もう一度サイコロを振れるよ！"
+        else:
+            game["turn"] = (game["turn"] + 1) % len(game["colors"])
+
     game["rolled"] = False
     game["dice"] = None
 
 
+def _ludo_cpu_turn(game):
+    """CPUのターンを自動で進める。"""
+    if not game.get("cpu_opponent"):
+        return
+
+    safety = 0
+
+    while game.get("winner") is None and game["turn"] == 1 and safety < 12:
+        safety += 1
+
+        _ludo_roll(game)
+
+        if game["dice"] is None:
+            continue
+
+        color = game["colors"][game["turn"]]
+        dice = game["dice"]
+        possible = _ludo_possible_moves(game, color, dice)
+
+        if not possible:
+            game["dice"] = None
+            game["rolled"] = False
+            game["turn"] = 0
+            break
+
+        def score(piece_index):
+            pos = game["positions"][color][piece_index]
+
+            if pos == -1:
+                return 30
+
+            new_pos = pos + dice
+            points = new_pos * 2
+
+            if new_pos == LUDO_FINISH:
+                points += 1000
+
+            elif new_pos < LUDO_TRACK_LEN:
+                square = _ludo_global_square(color, new_pos)
+
+                if square not in LUDO_SAFE_SQUARES:
+                    for other in game["colors"]:
+                        if other == color:
+                            continue
+
+                        for other_pos in game["positions"][other]:
+                            if 0 <= other_pos < LUDO_TRACK_LEN:
+                                if _ludo_global_square(other, other_pos) == square:
+                                    points += 100
+
+            return points
+
+        chosen = max(possible, key=score)
+        _ludo_move(game, chosen)
+
+        if game.get("winner"):
+            break
+
+        if game["turn"] == 0:
+            break
+
+
 def _ludo_board_svg(game):
-    """SVGでルドー盤面を描画。外周コース、4つのホーム、コマ位置を表示する。"""
-    import html
     cell = 34
     margin = 18
     size = cell * 15 + margin * 2
-    colors = {"赤": "#e53935", "青": "#1e88e5", "緑": "#43a047", "黄色": "#fdd835"}
-    # 15x15盤面の外周52マス（標準的なルドー配置）
-    track = [
-        (6,1),(6,2),(6,3),(6,4),(6,5),(5,6),(4,6),(3,6),(2,6),(1,6),(0,6),(0,7),(0,8),
-        (1,8),(2,8),(3,8),(4,8),(5,8),(6,9),(6,10),(6,11),(6,12),(6,13),(6,14),(7,14),(8,14),
-        (8,13),(8,12),(8,11),(8,10),(8,9),(9,8),(10,8),(11,8),(12,8),(13,8),(14,8),(14,7),(14,6),
-        (13,6),(12,6),(11,6),(10,6),(9,6),(8,5),(8,4),(8,3),(8,2),(8,1),(8,0),(7,0),(6,0)
+
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'viewBox="0 0 {size} {size}" '
+        f'style="width:100%;max-width:620px;height:auto;'
+        f'background:#fff;border:2px solid #555;border-radius:10px">'
     ]
-    # Start points are aligned to each color's track start.
-    starts = {"赤": 0, "青": 13, "緑": 26, "黄色": 39}
-    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" style="width:100%;max-width:600px;height:auto;background:#fff;border:2px solid #444;border-radius:10px">']
-    def rect(x,y,fill,stroke="#777",sw=1):
-        return f'<rect x="{margin+x*cell}" y="{margin+y*cell}" width="{cell}" height="{cell}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>'
-    # Base grid
+
+    def rect(x, y, fill, stroke="#888", sw=1):
+        return (
+            f'<rect x="{margin+x*cell}" y="{margin+y*cell}" '
+            f'width="{cell}" height="{cell}" fill="{fill}" '
+            f'stroke="{stroke}" stroke-width="{sw}"/>'
+        )
+
+    # 盤面の背景
     for y in range(15):
         for x in range(15):
             fill = "#ffffff"
-            if x < 6 and y < 6: fill = "#ffebee"
-            elif x > 8 and y < 6: fill = "#e3f2fd"
-            elif x < 6 and y > 8: fill = "#e8f5e9"
-            elif x > 8 and y > 8: fill = "#fff9c4"
-            svg.append(rect(x,y,fill))
-    # Four home bases
+
+            if x < 6 and y < 6:
+                fill = "#ffebee"
+            elif x > 8 and y < 6:
+                fill = "#e3f2fd"
+            elif x < 6 and y > 8:
+                fill = "#e8f5e9"
+            elif x > 8 and y > 8:
+                fill = "#fff9c4"
+
+            svg.append(rect(x, y, fill))
+
+    # 4色のホームエリア
     homes = [
-        (0,0,"赤"),(9,0,"青"),(0,9,"緑"),(9,9,"黄色")
+        (0, 0, "赤"),
+        (9, 0, "青"),
+        (0, 9, "緑"),
+        (9, 9, "黄色")
     ]
-    for hx,hy,c in homes:
-        svg.append(f'<rect x="{margin+hx*cell+5}" y="{margin+hy*cell+5}" width="{6*cell-10}" height="{6*cell-10}" rx="12" fill="{colors[c]}" opacity="0.22" stroke="{colors[c]}" stroke-width="3"/>')
-        for px,py in [(hx+1,hy+1),(hx+3,hy+1),(hx+1,hy+3),(hx+3,hy+3)]:
-            svg.append(f'<circle cx="{margin+(px+.5)*cell}" cy="{margin+(py+.5)*cell}" r="10" fill="#fff" stroke="{colors[c]}" stroke-width="3"/>')
-    # Outer path cells
-    for i,(x,y) in enumerate(track):
-        fill="#fff"
-        for c,start in starts.items():
-            if i == start: fill=colors[c]
-        svg.append(rect(x,y,fill,"#555",1.3))
-    # Colored home lanes
-    lanes = {
-        "赤":[(7,1),(7,2),(7,3),(7,4),(7,5),(7,6)],
-        "青":[(13,7),(12,7),(11,7),(10,7),(9,7),(8,7)],
-        "緑":[(1,7),(2,7),(3,7),(4,7),(5,7),(6,7)],
-        "黄色":[(7,13),(7,12),(7,11),(7,10),(7,9),(7,8)]
-    }
-    for c,coords in lanes.items():
-        for x,y in coords:
-            svg.append(rect(x,y,colors[c],"#555",1.2))
-    # Center goal
-    cx,cy=margin+7.5*cell,margin+7.5*cell
-    svg.append(f'<polygon points="{cx},{cy-cell} {cx+cell},{cy} {cx},{cy+cell}" fill="{colors["青"]}" opacity=".9"/>')
-    svg.append(f'<polygon points="{cx},{cy-cell} {cx-cell},{cy} {cx},{cy+cell}" fill="{colors["赤"]}" opacity=".9"/>')
-    svg.append(f'<polygon points="{cx-cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" fill="{colors["緑"]}" opacity=".9"/>')
-    svg.append(f'<polygon points="{cx+cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" fill="{colors["黄色"]}" opacity=".9"/>')
-    # Put all pieces on the path/home lane; multiple pieces at same square are offset.
-    for c in game.get("colors", []):
-        for j,pos in enumerate(game["positions"].get(c, [])):
-            if pos < 0:
+
+    for hx, hy, color in homes:
+        svg.append(
+            f'<rect x="{margin+hx*cell+5}" y="{margin+hy*cell+5}" '
+            f'width="{6*cell-10}" height="{6*cell-10}" rx="12" '
+            f'fill="{LUDO_HEX[color]}" opacity="0.25" '
+            f'stroke="{LUDO_HEX[color]}" stroke-width="3"/>'
+        )
+
+        for px, py in [
+            (hx + 1, hy + 1),
+            (hx + 3, hy + 1),
+            (hx + 1, hy + 3),
+            (hx + 3, hy + 3)
+        ]:
+            svg.append(
+                f'<circle cx="{margin+(px+0.5)*cell}" '
+                f'cy="{margin+(py+0.5)*cell}" r="10" '
+                f'fill="#fff" stroke="{LUDO_HEX[color]}" stroke-width="3"/>'
+            )
+
+    # 外周コース
+    for i, (x, y) in enumerate(LUDO_TRACK):
+        fill = "#ffffff"
+
+        for color, start in LUDO_STARTS.items():
+            if i == start:
+                fill = LUDO_HEX[color]
+
+        svg.append(rect(x, y, fill, "#555", 1.3))
+
+    # ゴールレーン
+    for color, coords in LUDO_LANES.items():
+        for x, y in coords:
+            svg.append(rect(x, y, LUDO_HEX[color], "#555", 1.2))
+
+    # 中央のゴール
+    cx = margin + 7.5 * cell
+    cy = margin + 7.5 * cell
+
+    svg.append(
+        f'<polygon points="{cx},{cy-cell} {cx+cell},{cy} {cx},{cy+cell}" '
+        f'fill="{LUDO_HEX["青"]}"/>'
+    )
+    svg.append(
+        f'<polygon points="{cx},{cy-cell} {cx-cell},{cy} {cx},{cy+cell}" '
+        f'fill="{LUDO_HEX["赤"]}"/>'
+    )
+    svg.append(
+        f'<polygon points="{cx-cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" '
+        f'fill="{LUDO_HEX["緑"]}"/>'
+    )
+    svg.append(
+        f'<polygon points="{cx+cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" '
+        f'fill="{LUDO_HEX["黄色"]}"/>'
+    )
+
+    # コマの表示
+    offsets = [(-7, -7), (7, -7), (-7, 7), (7, 7)]
+
+    for color in game["colors"]:
+        for index, pos in enumerate(game["positions"][color]):
+            if pos == -1:
                 continue
+
             if pos >= LUDO_FINISH:
-                x,y = 7,7
+                x, y = 7, 7
             elif pos < LUDO_TRACK_LEN:
-                x,y = track[(starts[c]+pos) % len(track)]
+                x, y = LUDO_TRACK[
+                    (LUDO_STARTS[color] + pos) % len(LUDO_TRACK)
+                ]
             else:
-                lane_pos = min(5, pos-LUDO_TRACK_LEN)
-                x,y = lanes[c][lane_pos]
-            offsets=[(-7,-7),(7,-7),(-7,7),(7,7)]
-            ox,oy=offsets[j]
-            px=margin+(x+.5)*cell+ox
-            py=margin+(y+.5)*cell+oy
-            svg.append(f'<circle cx="{px}" cy="{py}" r="8" fill="{colors[c]}" stroke="#111" stroke-width="1.5"/>')
-            svg.append(f'<text x="{px}" y="{py+3.5}" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">{j+1}</text>')
+                lane_pos = min(5, pos - LUDO_TRACK_LEN)
+                x, y = LUDO_LANES[color][lane_pos]
+
+            ox, oy = offsets[index]
+            px = margin + (x + 0.5) * cell + ox
+            py = margin + (y + 0.5) * cell + oy
+
+            svg.append(
+                f'<circle cx="{px}" cy="{py}" r="8" '
+                f'fill="{LUDO_HEX[color]}" stroke="#111" stroke-width="1.5"/>'
+            )
+            svg.append(
+                f'<text x="{px}" y="{py+3.5}" font-size="9" '
+                f'text-anchor="middle" fill="#fff" font-weight="bold">'
+                f'{index+1}</text>'
+            )
+
     svg.append("</svg>")
     return "".join(svg)
 
+
 def render_ludo():
     st.header("🎲 おまけ：ルドー")
-    st.write("赤・青・緑・黄色のコマを動かして、4つすべてを先にゴールさせよう！")
-    st.caption("ルール：コマを出すには6が必要。6が出たらもう一度。ゴールはぴったりの出目で入り、相手のコマを踏むとスタートに戻せます。")
-    with st.expander("🎮 新しいゲームを設定", expanded="ludo_game" not in st.session_state):
-        count = st.selectbox("プレイヤー人数", [1, 2, 3, 4], index=1, key="ludo_player_count")
-        names = []
+    st.write(
+        "赤・青・緑・黄色のコマを動かして、"
+        "4つすべてを先にゴールさせよう！"
+    )
+
+    st.caption(
+        "コマを出すには6が必要。6が出たらもう一度。"
+        "ゴールはぴったりの出目で入り、"
+        "相手のコマを踏むとスタートに戻せます。"
+    )
+
+    with st.expander(
+        "🎮 新しいゲームを設定",
+        expanded="ludo_game" not in st.session_state
+    ):
+        count = st.selectbox(
+            "人間プレイヤーの人数",
+            [1, 2, 3, 4],
+            index=0,
+            key="ludo_player_count"
+        )
+
+        cpu_opponent = False
+
+        if count == 1:
+            cpu_opponent = st.checkbox(
+                "コンピューターと対戦する",
+                value=True,
+                key="ludo_cpu_opponent"
+            )
+
         defaults = ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4"]
+        names = []
         cols = st.columns(2)
+
         for i in range(count):
             with cols[i % 2]:
-                names.append(st.text_input(f"{LUDO_EMOJI[LUDO_COLORS[i]]} {LUDO_COLORS[i]}のプレイヤー名", value=defaults[i], key=f"ludo_name_{i}").strip() or defaults[i])
-        if st.button("🚀 ゲーム開始 / 最初から", type="primary", key="ludo_start"):
-            st.session_state.ludo_game = _ludo_new_game(names)
+                name = st.text_input(
+                    f"{LUDO_EMOJI[LUDO_COLORS[i]]} {LUDO_COLORS[i]}のプレイヤー名",
+                    value=defaults[i],
+                    key=f"ludo_name_{i}"
+                ).strip()
+
+                names.append(name or defaults[i])
+
+        if st.button(
+            "🚀 ゲーム開始 / 最初から",
+            type="primary",
+            key="ludo_start"
+        ):
+            st.session_state.ludo_game = _ludo_new_game(
+                names,
+                cpu_opponent=cpu_opponent
+            )
             st.rerun()
+
     game = st.session_state.get("ludo_game")
+
     if not game:
         st.info("人数とプレイヤー名を設定して「ゲーム開始」を押してね。")
         return
+
     st.subheader("🗺️ ルドーの盤面")
     st.markdown(_ludo_board_svg(game), unsafe_allow_html=True)
-    st.caption("色付きの丸がコマです。丸の中の数字はコマ番号。盤面の下で、サイコロを振って動かすコマを選べます。")
-    if len(game["names"]) == 1:
-        st.info("1人プレイ：自分のコマ4つでゴールを目指すモードだよ。相手プレイヤーはいません。")
+
+    st.caption(
+        "色付きの丸がコマです。丸の中の数字はコマ番号。"
+        "盤面の下でサイコロを振ってコマを動かせます。"
+    )
+
+    if game.get("cpu_opponent"):
+        st.info("🔴 あなた（赤） vs 🔵 コンピューター（青）")
+
     if game.get("winner"):
         st.success(game["message"])
+
         if st.button("🔁 もう一度遊ぶ", key="ludo_again"):
-            st.session_state.ludo_game = _ludo_new_game(game["names"])
+            names = game["names"][:game["human_count"]]
+            st.session_state.ludo_game = _ludo_new_game(
+                names,
+                cpu_opponent=game.get("cpu_opponent", False)
+            )
             st.rerun()
+
         return
+
+    # CPUのターンなら自動操作
+    if (
+        game.get("cpu_opponent")
+        and game["turn"] == 1
+        and game["dice"] is None
+    ):
+        _ludo_cpu_turn(game)
+        st.rerun()
+
     current_color = game["colors"][game["turn"]]
-    st.subheader(f"{LUDO_EMOJI[current_color]} {game['names'][game['turn']]} の番")
+    current_player = game["names"][game["turn"]]
+
+    st.subheader(f"{LUDO_EMOJI[current_color]} {current_player} の番")
     st.info(game["message"])
+
     if game["dice"] is None:
-        if st.button("🎲 サイコロを振る", type="primary", use_container_width=True, key="ludo_roll"):
+        if st.button(
+            "🎲 サイコロを振る",
+            type="primary",
+            use_container_width=True,
+            key="ludo_roll"
+        ):
             _ludo_roll(game)
             st.rerun()
+
     else:
         st.markdown(f"## 🎲 出目：{game['dice']}")
+
         color_positions = game["positions"][current_color]
+
         for i, pos in enumerate(color_positions):
-            can_move = (pos == -1 and game["dice"] == 6) or (0 <= pos < LUDO_FINISH and pos + game["dice"] <= LUDO_FINISH)
-            label = "スタート待ち" if pos == -1 else ("ゴール！" if pos == LUDO_FINISH else f"コース {pos}/57")
+            can_move = (
+                (pos == -1 and game["dice"] == 6)
+                or (
+                    0 <= pos < LUDO_FINISH
+                    and pos + game["dice"] <= LUDO_FINISH
+                )
+            )
+
+            if pos == -1:
+                label = "スタート待ち"
+            elif pos == LUDO_FINISH:
+                label = "ゴール！"
+            else:
+                label = f"コース {pos}/57"
+
             c1, c2 = st.columns([3, 2])
             c1.write(f"{LUDO_EMOJI[current_color]} コマ{i+1}：{label}")
-            if c2.button("このコマを動かす", key=f"ludo_move_{current_color}_{i}", disabled=not can_move, use_container_width=True):
+
+            if c2.button(
+                "このコマを動かす",
+                key=f"ludo_move_{current_color}_{i}",
+                disabled=not can_move,
+                use_container_width=True
+            ):
                 _ludo_move(game, i)
+                _ludo_cpu_turn(game)
                 st.rerun()
+
     st.divider()
     st.subheader("🧩 コマの位置")
+
     rows = []
+
     for color in game["colors"]:
         idx = game["colors"].index(color)
         positions = game["positions"][color]
-        rows.append({"色": f"{LUDO_EMOJI[color]} {color}", "プレイヤー": game["names"][idx], "スタート待ち": positions.count(-1), "コース上": sum(0 <= x < LUDO_FINISH for x in positions), "ゴール": positions.count(LUDO_FINISH), "各コマ": " / ".join("待機" if x == -1 else "ゴール" if x == LUDO_FINISH else str(x) for x in positions)})
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-    st.caption("コース表示はスタートからの進み具合（0〜57）。1人プレイでは対戦相手なしで遊べます。")
+
+        rows.append({
+            "色": f"{LUDO_EMOJI[color]} {color}",
+            "プレイヤー": game["names"][idx],
+            "スタート待ち": positions.count(-1),
+            "コース上": sum(0 <= x < LUDO_FINISH for x in positions),
+            "ゴール": positions.count(LUDO_FINISH),
+            "各コマ": " / ".join(
+                "待機" if x == -1
+                else "ゴール" if x == LUDO_FINISH
+                else str(x)
+                for x in positions
+            )
+        })
+
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True,
+        hide_index=True
+    )
 
 
-page = st.sidebar.radio("🏠 メニュー",
-[
-    "ホーム",
-    "選手分析",
-    "ランキング",
-    "データ閲覧",
-    "監督キャリア",
-    "おまけ"
-]
+# ==========================================
+# サイドメニュー
+# ==========================================
+page = st.sidebar.radio(
+    "🏠 メニュー",
+    [
+        "ホーム",
+        "選手分析",
+        "ランキング",
+        "データ閲覧",
+        "監督キャリア",
+        "おまけ"
+    ]
 )
 
 if page == "監督キャリア":
