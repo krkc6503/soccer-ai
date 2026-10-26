@@ -775,11 +775,18 @@ def _ludo_global_square(color, pos):
     return (LUDO_STARTS[color] + pos) % LUDO_TRACK_LEN
 
 
+```python
 def _ludo_roll(game):
     if game.get("winner") or game.get("rolled"):
         return
 
-    value = random.randint(1, 6)
+    # 最初のサイコロだけ必ず6にする
+    if not game.get("first_roll_done", False):
+        value = 6
+        game["first_roll_done"] = True
+    else:
+        value = random.randint(1, 6)
+
     game["dice"] = value
     game["rolled"] = True
 
@@ -800,7 +807,7 @@ def _ludo_roll(game):
             f"{LUDO_EMOJI[color]} {player} の出目は {value}。"
             "動かすコマを選んでね。"
         )
-
+```
 
 def _ludo_move(game, piece_index):
     color = game["colors"][game["turn"]]
