@@ -2,3 +2,4 @@ streamlit
 pandas
 numpy
 plotly
+streamlit-sortables>=0.3.1
