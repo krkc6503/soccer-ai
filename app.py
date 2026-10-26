@@ -702,18 +702,163 @@ def render_career_mode(ea):
             st.rerun()
 
 
+# ==========================================
+# おまけ：ルドー
+# ==========================================
+LUDO_COLORS = ["赤", "青", "緑", "黄色"]
+LUDO_EMOJI = {"赤": "🔴", "青": "🔵", "緑": "🟢", "黄色": "🟡"}
+LUDO_TRACK_LEN = 52
+LUDO_FINISH = 57
+
+def _ludo_new_game(names):
+    return {
+        "names": names,
+        "colors": LUDO_COLORS[:len(names)],
+        "positions": {color: [-1, -1, -1, -1] for color in LUDO_COLORS[:len(names)]},
+        "turn": 0,
+        "dice": None,
+        "winner": None,
+        "message": "サイコロを振ってゲーム開始！",
+        "rolled": False,
+    }
+
+def _ludo_roll(game):
+    import random
+    if game.get("winner"):
+        return
+    if game.get("rolled"):
+        return
+    value = random.randint(1, 6)
+    game["dice"] = value
+    game["rolled"] = True
+    color = game["colors"][game["turn"]]
+    positions = game["positions"][color]
+    possible = [i for i, pos in enumerate(positions) if (pos == -1 and value == 6) or (0 <= pos < LUDO_FINISH and pos + value <= LUDO_FINISH)]
+    if not possible:
+        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} は {value}。動かせるコマがないので次の人へ。"
+        game["rolled"] = False
+        game["dice"] = None
+        game["turn"] = (game["turn"] + 1) % len(game["colors"])
+    else:
+        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} の出目は {value}。動かすコマを選んでね。"
+
+def _ludo_move(game, piece_index):
+    color = game["colors"][game["turn"]]
+    value = game["dice"]
+    if value is None:
+        return
+    pos = game["positions"][color][piece_index]
+    if pos == -1:
+        if value != 6:
+            return
+        new_pos = 0
+    else:
+        new_pos = pos + value
+    if new_pos > LUDO_FINISH:
+        game["message"] = "ゴールにはぴったりの出目が必要だよ。別のコマを選んでね。"
+        return
+    game["positions"][color][piece_index] = new_pos
+    # Captures are possible only on the shared 52-space track, not in home lanes.
+    if 0 <= new_pos < LUDO_TRACK_LEN:
+        global_square = (new_pos + LUDO_COLORS.index(color) * 13) % LUDO_TRACK_LEN
+        safe_squares = {0, 8, 13, 21, 26, 34, 39, 47}
+        captured = []
+        if global_square not in safe_squares:
+            for other in game["colors"]:
+                if other == color:
+                    continue
+                for j, other_pos in enumerate(game["positions"][other]):
+                    if 0 <= other_pos < LUDO_TRACK_LEN:
+                        other_square = (other_pos + LUDO_COLORS.index(other) * 13) % LUDO_TRACK_LEN
+                        if other_square == global_square:
+                            game["positions"][other][j] = -1
+                            captured.append(game["names"][game["colors"].index(other)])
+    if all(x == LUDO_FINISH for x in game["positions"][color]):
+        game["winner"] = game["names"][game["turn"]]
+        game["message"] = f"🏆 {game['winner']}（{color}）の勝ち！"
+    else:
+        suffix = f" {', '.join(captured)} のコマを戻した！" if 'captured' in locals() and captured else ""
+        game["message"] = f"{LUDO_EMOJI[color]} {game['names'][game['turn']]} がコマ{piece_index + 1}を動かした。{suffix}"
+        if value != 6:
+            game["turn"] = (game["turn"] + 1) % len(game["colors"])
+        else:
+            game["message"] += " 6が出たので、もう一度サイコロを振れるよ！"
+    game["rolled"] = False
+    game["dice"] = None
+
+def render_ludo():
+    st.header("🎲 おまけ：ルドー")
+    st.write("赤・青・緑・黄色のコマを動かして、4つすべてを先にゴールさせよう！")
+    st.caption("ルール：コマを出すには6が必要。6が出たらもう一度。ゴールはぴったりの出目で入り、相手のコマを踏むとスタートに戻せます。")
+    with st.expander("🎮 新しいゲームを設定", expanded="ludo_game" not in st.session_state):
+        count = st.selectbox("プレイヤー人数", [1, 2, 3, 4], index=1, key="ludo_player_count")
+        names = []
+        defaults = ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4"]
+        cols = st.columns(2)
+        for i in range(count):
+            with cols[i % 2]:
+                names.append(st.text_input(f"{LUDO_EMOJI[LUDO_COLORS[i]]} {LUDO_COLORS[i]}のプレイヤー名", value=defaults[i], key=f"ludo_name_{i}").strip() or defaults[i])
+        if st.button("🚀 ゲーム開始 / 最初から", type="primary", key="ludo_start"):
+            st.session_state.ludo_game = _ludo_new_game(names)
+            st.rerun()
+    game = st.session_state.get("ludo_game")
+    if not game:
+        st.info("人数とプレイヤー名を設定して「ゲーム開始」を押してね。")
+        return
+    if len(game["names"]) == 1:
+        st.info("1人プレイ：自分のコマ4つでゴールを目指すモードだよ。相手プレイヤーはいません。")
+    if game.get("winner"):
+        st.success(game["message"])
+        if st.button("🔁 もう一度遊ぶ", key="ludo_again"):
+            st.session_state.ludo_game = _ludo_new_game(game["names"])
+            st.rerun()
+        return
+    current_color = game["colors"][game["turn"]]
+    st.subheader(f"{LUDO_EMOJI[current_color]} {game['names'][game['turn']]} の番")
+    st.info(game["message"])
+    if game["dice"] is None:
+        if st.button("🎲 サイコロを振る", type="primary", use_container_width=True, key="ludo_roll"):
+            _ludo_roll(game)
+            st.rerun()
+    else:
+        st.markdown(f"## 🎲 出目：{game['dice']}")
+        color_positions = game["positions"][current_color]
+        for i, pos in enumerate(color_positions):
+            can_move = (pos == -1 and game["dice"] == 6) or (0 <= pos < LUDO_FINISH and pos + game["dice"] <= LUDO_FINISH)
+            label = "スタート待ち" if pos == -1 else ("ゴール！" if pos == LUDO_FINISH else f"コース {pos}/57")
+            c1, c2 = st.columns([3, 2])
+            c1.write(f"{LUDO_EMOJI[current_color]} コマ{i+1}：{label}")
+            if c2.button("このコマを動かす", key=f"ludo_move_{current_color}_{i}", disabled=not can_move, use_container_width=True):
+                _ludo_move(game, i)
+                st.rerun()
+    st.divider()
+    st.subheader("🧩 コマの位置")
+    rows = []
+    for color in game["colors"]:
+        idx = game["colors"].index(color)
+        positions = game["positions"][color]
+        rows.append({"色": f"{LUDO_EMOJI[color]} {color}", "プレイヤー": game["names"][idx], "スタート待ち": positions.count(-1), "コース上": sum(0 <= x < LUDO_FINISH for x in positions), "ゴール": positions.count(LUDO_FINISH), "各コマ": " / ".join("待機" if x == -1 else "ゴール" if x == LUDO_FINISH else str(x) for x in positions)})
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.caption("コース表示はスタートからの進み具合（0〜57）。1人プレイでは対戦相手なしで遊べます。")
+
+
 page = st.sidebar.radio("🏠 メニュー",
 [
     "ホーム",
     "選手分析",
     "ランキング",
     "データ閲覧",
-    "監督キャリア"
+    "監督キャリア",
+    "おまけ"
 ]
 )
 
 if page == "監督キャリア":
     render_career_mode(ea)
+    st.stop()
+
+if page == "おまけ":
+    render_ludo()
     st.stop()
 
 # ==========================================
