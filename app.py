@@ -796,9 +796,12 @@ def _ludo_roll(game):
     if game.get("winner") or game.get("rolled"):
         return
 
-    if not game.get("first_roll_done", False):
+    color = game["colors"][game["turn"]]
+    first_rolls = game.setdefault("first_roll_done", {})
+
+    if not first_rolls.get(color, False):
         value = 6
-        game["first_roll_done"] = True
+        first_rolls[color] = True
     else:
         value = random.randint(1, 6)
 
