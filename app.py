@@ -101,22 +101,26 @@ def _estimate_value(row):
     age_factor = 1.25 if age <= 21 else 1.12 if age <= 24 else 1.0 if age <= 28 else 0.72 if age <= 31 else 0.42
     return int(base * age_factor / 10_000) * 10_000
 
+```python
 def _image_url(row):
     player_id = row.get("ID")
 
     if pd.notna(player_id):
         try:
             player_id = int(float(player_id))
+            cdn_token = st.secrets.get("FCRADAR_CDN_TOKEN", "")
 
-            # FC27の画像URL
-            return (
-                f"https://ratings-images-prod.pulse.ea.com/"
-                f"FC27/components/items/{player_id}_en.webp"
-            )
+            if cdn_token:
+                return (
+                    f"https://pub-api.fcradar.gg/cdn/"
+                    f"{cdn_token}/FC27/heads/{player_id}.png"
+                )
+
         except (TypeError, ValueError):
             pass
 
     return None
+```
 
 def _clean_players(ea):
     df = ea.copy()
