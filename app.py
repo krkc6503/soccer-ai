@@ -352,7 +352,12 @@ def render_career_mode(ea):
                 direction="vertical",
                 key="career_drag_lineup"
             )
-            sorted_items = sort_items(items, multi_containers=True, direction="vertical", key="career_drag_lineup")
+            sorted_items = sort_items(
+                items,
+                multi_containers=True,
+                direction="vertical",
+                key="career_drag_lineup_v2"
+            )
             label_to_name = {}
             for _, row in squad.drop_duplicates("Name").iterrows():
                 label_to_name[_player_label(row)] = row["Name"]
