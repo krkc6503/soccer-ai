@@ -1133,13 +1133,21 @@ def render_ludo():
         st.info("人数とプレイヤー名を設定して「ゲーム開始」を押してね。")
         return
 
-    st.subheader("🗺️ ルドーの盤面")
-    st.markdown(_ludo_board_svg(game), unsafe_allow_html=True)
+    board_col, control_col = st.columns([3, 1])
 
-    st.caption(
-        "色付きの丸がコマです。丸の中の数字はコマ番号。"
-        "盤面の下でサイコロを振ってコマを動かせます。"
-    )
+    with board_col:
+        st.subheader("🗺️ ルドーの盤面")
+        st.markdown(
+            _ludo_board_svg(game),
+            unsafe_allow_html=True
+        )
+
+        st.caption(
+            "色付きの丸がコマです。丸の中の数字はコマ番号。"
+        )
+
+    with control_col:
+        st.subheader("🎮 操作")
 
     if game.get("cpu_opponent"):
         st.info("🔴 あなた（赤） vs 🔵 コンピューター（青）")
