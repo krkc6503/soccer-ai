@@ -806,7 +806,6 @@ def _ludo_roll(game):
             f"{LUDO_EMOJI[color]} {player} の出目は {value}。"
             "動かすコマを選んでね。"
         )
-```
 
 def _ludo_move(game, piece_index):
     color = game["colors"][game["turn"]]
