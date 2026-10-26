@@ -1146,7 +1146,6 @@ def render_ludo():
             "色付きの丸がコマです。丸の中の数字はコマ番号。"
         )
 
-```python
     with control_col:
         st.subheader("🎮 操作")
 
@@ -1252,7 +1251,6 @@ def render_ludo():
         use_container_width=True,
         hide_index=True
     )
-```
 
 
 # ==========================================
