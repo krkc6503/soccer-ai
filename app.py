@@ -796,7 +796,6 @@ def _ludo_roll(game):
     if game.get("winner") or game.get("rolled"):
         return
 
-    # 最初のサイコロだけ必ず6にする
     if not game.get("first_roll_done", False):
         value = 6
         game["first_roll_done"] = True
