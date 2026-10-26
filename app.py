@@ -786,6 +786,86 @@ def _ludo_move(game, piece_index):
     game["rolled"] = False
     game["dice"] = None
 
+
+def _ludo_board_svg(game):
+    """SVGでルドー盤面を描画。外周コース、4つのホーム、コマ位置を表示する。"""
+    import html
+    cell = 34
+    margin = 18
+    size = cell * 15 + margin * 2
+    colors = {"赤": "#e53935", "青": "#1e88e5", "緑": "#43a047", "黄色": "#fdd835"}
+    # 15x15盤面の外周52マス（標準的なルドー配置）
+    track = [
+        (6,1),(6,2),(6,3),(6,4),(6,5),(5,6),(4,6),(3,6),(2,6),(1,6),(0,6),(0,7),(0,8),
+        (1,8),(2,8),(3,8),(4,8),(5,8),(6,9),(6,10),(6,11),(6,12),(6,13),(6,14),(7,14),(8,14),
+        (8,13),(8,12),(8,11),(8,10),(8,9),(9,8),(10,8),(11,8),(12,8),(13,8),(14,8),(14,7),(14,6),
+        (13,6),(12,6),(11,6),(10,6),(9,6),(8,5),(8,4),(8,3),(8,2),(8,1),(8,0),(7,0),(6,0)
+    ]
+    # Start points are aligned to each color's track start.
+    starts = {"赤": 0, "青": 13, "緑": 26, "黄色": 39}
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {size} {size}" style="width:100%;max-width:600px;height:auto;background:#fff;border:2px solid #444;border-radius:10px">']
+    def rect(x,y,fill,stroke="#777",sw=1):
+        return f'<rect x="{margin+x*cell}" y="{margin+y*cell}" width="{cell}" height="{cell}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}"/>'
+    # Base grid
+    for y in range(15):
+        for x in range(15):
+            fill = "#ffffff"
+            if x < 6 and y < 6: fill = "#ffebee"
+            elif x > 8 and y < 6: fill = "#e3f2fd"
+            elif x < 6 and y > 8: fill = "#e8f5e9"
+            elif x > 8 and y > 8: fill = "#fff9c4"
+            svg.append(rect(x,y,fill))
+    # Four home bases
+    homes = [
+        (0,0,"赤"),(9,0,"青"),(0,9,"緑"),(9,9,"黄色")
+    ]
+    for hx,hy,c in homes:
+        svg.append(f'<rect x="{margin+hx*cell+5}" y="{margin+hy*cell+5}" width="{6*cell-10}" height="{6*cell-10}" rx="12" fill="{colors[c]}" opacity="0.22" stroke="{colors[c]}" stroke-width="3"/>')
+        for px,py in [(hx+1,hy+1),(hx+3,hy+1),(hx+1,hy+3),(hx+3,hy+3)]:
+            svg.append(f'<circle cx="{margin+(px+.5)*cell}" cy="{margin+(py+.5)*cell}" r="10" fill="#fff" stroke="{colors[c]}" stroke-width="3"/>')
+    # Outer path cells
+    for i,(x,y) in enumerate(track):
+        fill="#fff"
+        for c,start in starts.items():
+            if i == start: fill=colors[c]
+        svg.append(rect(x,y,fill,"#555",1.3))
+    # Colored home lanes
+    lanes = {
+        "赤":[(7,1),(7,2),(7,3),(7,4),(7,5),(7,6)],
+        "青":[(13,7),(12,7),(11,7),(10,7),(9,7),(8,7)],
+        "緑":[(1,7),(2,7),(3,7),(4,7),(5,7),(6,7)],
+        "黄色":[(7,13),(7,12),(7,11),(7,10),(7,9),(7,8)]
+    }
+    for c,coords in lanes.items():
+        for x,y in coords:
+            svg.append(rect(x,y,colors[c],"#555",1.2))
+    # Center goal
+    cx,cy=margin+7.5*cell,margin+7.5*cell
+    svg.append(f'<polygon points="{cx},{cy-cell} {cx+cell},{cy} {cx},{cy+cell}" fill="{colors["青"]}" opacity=".9"/>')
+    svg.append(f'<polygon points="{cx},{cy-cell} {cx-cell},{cy} {cx},{cy+cell}" fill="{colors["赤"]}" opacity=".9"/>')
+    svg.append(f'<polygon points="{cx-cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" fill="{colors["緑"]}" opacity=".9"/>')
+    svg.append(f'<polygon points="{cx+cell},{cy} {cx},{cy-cell} {cx},{cy+cell}" fill="{colors["黄色"]}" opacity=".9"/>')
+    # Put all pieces on the path/home lane; multiple pieces at same square are offset.
+    for c in game.get("colors", []):
+        for j,pos in enumerate(game["positions"].get(c, [])):
+            if pos < 0:
+                continue
+            if pos >= LUDO_FINISH:
+                x,y = 7,7
+            elif pos < LUDO_TRACK_LEN:
+                x,y = track[(starts[c]+pos) % len(track)]
+            else:
+                lane_pos = min(5, pos-LUDO_TRACK_LEN)
+                x,y = lanes[c][lane_pos]
+            offsets=[(-7,-7),(7,-7),(-7,7),(7,7)]
+            ox,oy=offsets[j]
+            px=margin+(x+.5)*cell+ox
+            py=margin+(y+.5)*cell+oy
+            svg.append(f'<circle cx="{px}" cy="{py}" r="8" fill="{colors[c]}" stroke="#111" stroke-width="1.5"/>')
+            svg.append(f'<text x="{px}" y="{py+3.5}" font-size="9" text-anchor="middle" fill="#fff" font-weight="bold">{j+1}</text>')
+    svg.append("</svg>")
+    return "".join(svg)
+
 def render_ludo():
     st.header("🎲 おまけ：ルドー")
     st.write("赤・青・緑・黄色のコマを動かして、4つすべてを先にゴールさせよう！")
@@ -805,6 +885,9 @@ def render_ludo():
     if not game:
         st.info("人数とプレイヤー名を設定して「ゲーム開始」を押してね。")
         return
+    st.subheader("🗺️ ルドーの盤面")
+    st.markdown(_ludo_board_svg(game), unsafe_allow_html=True)
+    st.caption("色付きの丸がコマです。丸の中の数字はコマ番号。盤面の下で、サイコロを振って動かすコマを選べます。")
     if len(game["names"]) == 1:
         st.info("1人プレイ：自分のコマ4つでゴールを目指すモードだよ。相手プレイヤーはいません。")
     if game.get("winner"):
