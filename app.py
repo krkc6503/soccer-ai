@@ -101,7 +101,6 @@ def _estimate_value(row):
     age_factor = 1.25 if age <= 21 else 1.12 if age <= 24 else 1.0 if age <= 28 else 0.72 if age <= 31 else 0.42
     return int(base * age_factor / 10_000) * 10_000
 
-```python
 def _image_url(row):
     player_id = row.get("ID")
 
