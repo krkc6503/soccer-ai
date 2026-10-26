@@ -1146,83 +1146,83 @@ def render_ludo():
             "色付きの丸がコマです。丸の中の数字はコマ番号。"
         )
 
+```python
     with control_col:
         st.subheader("🎮 操作")
 
-    if game.get("cpu_opponent"):
-        st.info("🔴 あなた（赤） vs 🔵 コンピューター（青）")
+        if game.get("cpu_opponent"):
+            st.info("🔴 あなた（赤） vs 🔵 コンピューター（青）")
 
-    if game.get("winner"):
-        st.success(game["message"])
+        if game.get("winner"):
+            st.success(game["message"])
 
-        if st.button("🔁 もう一度遊ぶ", key="ludo_again"):
-            names = game["names"][:game["human_count"]]
-            st.session_state.ludo_game = _ludo_new_game(
-                names,
-                cpu_opponent=game.get("cpu_opponent", False)
-            )
-            st.rerun()
-
-        return
-
-    # CPUのターンなら自動操作
-    if (
-        game.get("cpu_opponent")
-        and game["turn"] == 1
-        and game["dice"] is None
-    ):
-        _ludo_cpu_turn(game)
-        st.rerun()
-
-    current_color = game["colors"][game["turn"]]
-    current_player = game["names"][game["turn"]]
-
-    st.subheader(f"{LUDO_EMOJI[current_color]} {current_player} の番")
-    st.info(game["message"])
-
-    if game["dice"] is None:
-        if st.button(
-            "🎲 サイコロを振る",
-            type="primary",
-            use_container_width=True,
-            key="ludo_roll"
-        ):
-            _ludo_roll(game)
-            st.rerun()
-
-    else:
-        st.markdown(f"## 🎲 出目：{game['dice']}")
-
-        color_positions = game["positions"][current_color]
-
-        for i, pos in enumerate(color_positions):
-            can_move = (
-                (pos == -1 and game["dice"] == 6)
-                or (
-                    0 <= pos < LUDO_FINISH
-                    and pos + game["dice"] <= LUDO_FINISH
+            if st.button("🔁 もう一度遊ぶ", key="ludo_again"):
+                names = game["names"][:game["human_count"]]
+                st.session_state.ludo_game = _ludo_new_game(
+                    names,
+                    cpu_opponent=game.get("cpu_opponent", False)
                 )
-            )
-
-            if pos == -1:
-                label = "スタート待ち"
-            elif pos == LUDO_FINISH:
-                label = "ゴール！"
-            else:
-                label = f"コース {pos}/57"
-
-            c1, c2 = st.columns([3, 2])
-            c1.write(f"{LUDO_EMOJI[current_color]} コマ{i+1}：{label}")
-
-            if c2.button(
-                "このコマを動かす",
-                key=f"ludo_move_{current_color}_{i}",
-                disabled=not can_move,
-                use_container_width=True
-            ):
-                _ludo_move(game, i)
-                _ludo_cpu_turn(game)
                 st.rerun()
+
+            return
+
+        # CPUのターンなら自動操作
+        if (
+            game.get("cpu_opponent")
+            and game["turn"] == 1
+            and game["dice"] is None
+        ):
+            _ludo_cpu_turn(game)
+            st.rerun()
+
+        current_color = game["colors"][game["turn"]]
+        current_player = game["names"][game["turn"]]
+
+        st.markdown(f"### {LUDO_EMOJI[current_color]} {current_player} の番")
+        st.info(game["message"])
+
+        if game["dice"] is None:
+            if st.button(
+                "🎲 サイコロを振る",
+                type="primary",
+                use_container_width=True,
+                key="ludo_roll"
+            ):
+                _ludo_roll(game)
+                st.rerun()
+
+        else:
+            st.markdown(f"### 🎲 出目：{game['dice']}")
+
+            color_positions = game["positions"][current_color]
+
+            for i, pos in enumerate(color_positions):
+                can_move = (
+                    (pos == -1 and game["dice"] == 6)
+                    or (
+                        0 <= pos < LUDO_FINISH
+                        and pos + game["dice"] <= LUDO_FINISH
+                    )
+                )
+
+                if pos == -1:
+                    label = "スタート待ち"
+                elif pos == LUDO_FINISH:
+                    label = "ゴール！"
+                else:
+                    label = f"コース {pos}/57"
+
+                st.write(f"{LUDO_EMOJI[current_color]} コマ{i+1}：{label}")
+
+                if st.button(
+                    f"コマ{i+1}を動かす",
+                    key=f"ludo_move_{current_color}_{i}",
+                    disabled=not can_move,
+                    use_container_width=True
+                ):
+                    _ludo_move(game, i)
+                    _ludo_cpu_turn(game)
+                    st.rerun()
 
     st.divider()
     st.subheader("🧩 コマの位置")
@@ -1252,6 +1252,7 @@ def render_ludo():
         use_container_width=True,
         hide_index=True
     )
+```
 
 
 # ==========================================
