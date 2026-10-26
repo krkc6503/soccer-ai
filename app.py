@@ -1,4 +1,6 @@
 import streamlit as st
+
+FCRADAR_API_KEY = st.secrets.get("FCRADAR_API_KEY", "")
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
