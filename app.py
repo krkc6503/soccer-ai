@@ -115,7 +115,6 @@ def _image_url(row):
             pass
 
     return None
-```
 
 def _clean_players(ea):
     df = ea.copy()
