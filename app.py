@@ -337,14 +337,34 @@ def render_career_mode(ea):
             items = []
             for zone in ZONE_NAMES:
                 names = [n for n in current_lineup.get(zone, []) if n in valid_names]
-                items.append([_player_label(squad[squad["Name"] == n].iloc[0]) for n in names])
+                items.append({
+                    "header": zone,
+                    "items": [
+                        _player_label(squad[squad["Name"] == n].iloc[0])
+                        for n in names
+                    ]
+                })
+
             # Sortable component returns the contents of each drag-and-drop zone.
+            sorted_items = sort_items(
+                items,
+                multi_containers=True,
+                direction="vertical",
+                key="career_drag_lineup"
+            )
             sorted_items = sort_items(items, multi_containers=True, direction="vertical", key="career_drag_lineup")
             label_to_name = {}
             for _, row in squad.drop_duplicates("Name").iterrows():
                 label_to_name[_player_label(row)] = row["Name"]
             new_lineup = {zone: [] for zone in ZONE_NAMES}
-            for zone, labels in zip(ZONE_NAMES, sorted_items):
+
+            for container in sorted_items:
+                zone = container.get("header")
+                labels = container.get("items", [])
+
+                if zone not in new_lineup:
+                    continue
+
                 for label in labels:
                     if label in label_to_name:
                         new_lineup[zone].append(label_to_name[label])
