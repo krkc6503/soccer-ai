@@ -1061,7 +1061,6 @@ def _ludo_board_svg(game):
                 continue
 
             if pos >= LUDO_FINISH:
-                # ゴールしたコマは中央に色別で表示
                 goal_positions = {
                     "赤": (7, 7),
                     "青": (8, 7),
@@ -1076,10 +1075,10 @@ def _ludo_board_svg(game):
                 ]
 
             else:
-                lane_pos = min(5, pos - LUDO_TRACK_LEN)
+                lane_pos = pos - LUDO_TRACK_LEN
+                lane_pos = max(0, min(5, lane_pos))
                 x, y = LUDO_LANES[color][lane_pos]
 
-            # コマの表示位置
             ox, oy = offsets[index]
             px = margin + (x + 0.5) * cell + ox
             py = margin + (y + 0.5) * cell + oy
@@ -1089,6 +1088,11 @@ def _ludo_board_svg(game):
                 f'fill="{LUDO_HEX[color]}" stroke="#111" stroke-width="1.5"/>'
             )
 
+            svg.append(
+                f'<text x="{px}" y="{py+3.5}" font-size="9" '
+                f'text-anchor="middle" fill="#fff" font-weight="bold">'
+                f'{index+1}</text>'
+            )
             svg.append(
                 f'<text x="{px}" y="{py+3.5}" font-size="9" '
                 f'text-anchor="middle" fill="#fff" font-weight="bold">'
