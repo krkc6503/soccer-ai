@@ -1060,20 +1060,40 @@ def _ludo_board_svg(game):
             if pos == -1:
                 continue
 
-        if pos >= LUDO_FINISH:
-            # ゴールしたコマは中央に色別で表示
-            goal_positions = {
-                "赤": (7, 7),
-                "青": (8, 7),
-                "緑": (6, 7),
-                "黄色": (7, 8),
-            }
-            x, y = goal_positions[color]
+            if pos >= LUDO_FINISH:
+                # ゴールしたコマは中央に色別で表示
+                goal_positions = {
+                    "赤": (7, 7),
+                    "青": (8, 7),
+                    "緑": (6, 7),
+                    "黄色": (7, 8),
+                }
+                x, y = goal_positions[color]
 
-        elif pos < LUDO_TRACK_LEN:
-            x, y = LUDO_TRACK[
-                (LUDO_STARTS[color] + pos) % len(LUDO_TRACK)
-            ]
+            elif pos < LUDO_TRACK_LEN:
+                x, y = LUDO_TRACK[
+                    (LUDO_STARTS[color] + pos) % len(LUDO_TRACK)
+                ]
+
+            else:
+                lane_pos = min(5, pos - LUDO_TRACK_LEN)
+                x, y = LUDO_LANES[color][lane_pos]
+
+            # コマの表示位置
+            ox, oy = offsets[index]
+            px = margin + (x + 0.5) * cell + ox
+            py = margin + (y + 0.5) * cell + oy
+
+            svg.append(
+                f'<circle cx="{px}" cy="{py}" r="8" '
+                f'fill="{LUDO_HEX[color]}" stroke="#111" stroke-width="1.5"/>'
+            )
+
+            svg.append(
+                f'<text x="{px}" y="{py+3.5}" font-size="9" '
+                f'text-anchor="middle" fill="#fff" font-weight="bold">'
+                f'{index+1}</text>'
+            )
 
         else:
             lane_pos = min(5, pos - LUDO_TRACK_LEN)
