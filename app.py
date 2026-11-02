@@ -1075,8 +1075,10 @@ def _ludo_board_svg(game):
                 ]
 
             else:
-                lane_pos = pos - LUDO_TRACK_LEN
-                lane_pos = max(0, min(5, lane_pos))
+                lane_pos = max(
+                    0,
+                    min(len(LUDO_LANES[color]) - 1, pos - LUDO_TRACK_LEN)
+                )
                 x, y = LUDO_LANES[color][lane_pos]
 
             ox, oy = offsets[index]
@@ -1093,31 +1095,9 @@ def _ludo_board_svg(game):
                 f'text-anchor="middle" fill="#fff" font-weight="bold">'
                 f'{index+1}</text>'
             )
-            svg.append(
-                f'<text x="{px}" y="{py+3.5}" font-size="9" '
-                f'text-anchor="middle" fill="#fff" font-weight="bold">'
-                f'{index+1}</text>'
-            )
-
-        else:
-            lane_pos = min(5, pos - LUDO_TRACK_LEN)
-            x, y = LUDO_LANES[color][lane_pos]
-
-            ox, oy = offsets[index]
-            px = margin + (x + 0.5) * cell + ox
-            py = margin + (y + 0.5) * cell + oy
-
-            svg.append(
-                f'<circle cx="{px}" cy="{py}" r="8" '
-                f'fill="{LUDO_HEX[color]}" stroke="#111" stroke-width="1.5"/>'
-            )
-            svg.append(
-                f'<text x="{px}" y="{py+3.5}" font-size="9" '
-                f'text-anchor="middle" fill="#fff" font-weight="bold">'
-                f'{index+1}</text>'
-            )
 
     svg.append("</svg>")
+    return "".join(svg)
     return "".join(svg)
 
 
