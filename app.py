@@ -1060,22 +1060,24 @@ def _ludo_board_svg(game):
             if pos == -1:
                 continue
 
-    if pos >= LUDO_FINISH:
-        # ゴールしたコマは中央に色別で表示
-        goal_positions = {
-            "赤": (7, 7),
-            "青": (8, 7),
-            "緑": (6, 7),
-            "黄色": (7, 8),
-        }
-    x, y = goal_positions[color]
-            elif pos < LUDO_TRACK_LEN:
-                x, y = LUDO_TRACK[
-                    (LUDO_STARTS[color] + pos) % len(LUDO_TRACK)
-                ]
-            else:
-                lane_pos = min(5, pos - LUDO_TRACK_LEN)
-                x, y = LUDO_LANES[color][lane_pos]
+        if pos >= LUDO_FINISH:
+            # ゴールしたコマは中央に色別で表示
+            goal_positions = {
+                "赤": (7, 7),
+                "青": (8, 7),
+                "緑": (6, 7),
+                "黄色": (7, 8),
+            }
+            x, y = goal_positions[color]
+
+        elif pos < LUDO_TRACK_LEN:
+            x, y = LUDO_TRACK[
+                (LUDO_STARTS[color] + pos) % len(LUDO_TRACK)
+            ]
+
+        else:
+            lane_pos = min(5, pos - LUDO_TRACK_LEN)
+            x, y = LUDO_LANES[color][lane_pos]
 
             ox, oy = offsets[index]
             px = margin + (x + 0.5) * cell + ox
